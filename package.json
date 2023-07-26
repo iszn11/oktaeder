@@ -2,7 +2,11 @@
 	"name": "oktaeder",
 	"version": "0.1.0",
 	"description": "3D rendering library for WebGPU",
-	"keywords": ["3d", "gltf", "wegbpu"],
+	"keywords": [
+		"3d",
+		"gltf",
+		"wegbpu"
+	],
 	"homepage": "https://github.com/iszn11/oktaeder",
 	"bugs": {
 		"url": "https://github.com/iszn11/oktaeder/issues"
@@ -20,6 +24,7 @@
 		"tslib": "^2.6.1"
 	},
 	"devDependencies": {
+		"@webgpu/types": "^0.1.34",
 		"typescript": "5.1.6"
 	},
 	"exports": {
