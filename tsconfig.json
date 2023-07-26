@@ -1,0 +1,55 @@
+{
+	"compilerOptions": {
+		"incremental": true,
+		"composite": true,
+
+		"module": "ES2022",
+		"moduleResolution": "bundler",
+
+		"outDir": "./dist/",
+		"rootDir": "./src/",
+		"tsBuildInfoFile": "./.tsbuildinfo",
+
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM"],
+
+		"sourceMap": true,
+		"declaration": true,
+		"declarationMap": true,
+		"removeComments": false,
+		"newLine": "lf",
+
+		"noErrorTruncation": true,
+
+		"strict": true,
+		"alwaysStrict": true,
+		"noImplicitAny": true,
+		"noImplicitThis": true,
+		"strictNullChecks": true,
+		"strictBindCallApply": true,
+		"strictFunctionTypes": true,
+		"strictPropertyInitialization": true,
+		"useUnknownInCatchVariables": true,
+
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"allowUnusedLabels": false,
+		"allowUnreachableCode": false,
+
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+
+		"noUncheckedIndexedAccess": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noFallthroughCasesInSwitch": true,
+		"exactOptionalPropertyTypes": true,
+		"forceConsistentCasingInFileNames": true,
+
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		"importHelpers": true,
+
+		"skipLibCheck": false,
+	},
+}
