@@ -12,6 +12,7 @@ export * from "./Matrix4x4";
 export * from "./Mesh";
 export * from "./Node";
 export * from "./Quaternion";
+export * from "./Renderer";
 export * from "./Scene";
 export * from "./Texture2D";
 export * from "./Vector3";

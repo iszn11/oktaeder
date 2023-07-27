@@ -4,41 +4,47 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import { Renderer } from "./Renderer";
+
 export interface Texture2DProps {
 	name?: string;
-	device: GPUDevice;
+
 	width: number;
 	height: number;
+
+	sRGB?: boolean;
 }
 
 export class Texture2D {
 
 	readonly type!: "Texture2D";
+	_renderer: Renderer;
 
 	_name: string;
 
-	_device: GPUDevice;
 	_texture: GPUTexture;
 	_textureView: GPUTextureView;
 
-	constructor({
+	constructor(renderer: Renderer, {
 		name = "",
-		device,
 		width,
 		height,
+		sRGB = false,
 	}: Texture2DProps) {
 		Object.defineProperty(this, "type", { value: "Texture2D" });
 
+		this._renderer = renderer;
+
 		this._name = name;
 
-		this._device = device;
-		this._texture = device.createTexture({
+		this._renderer = renderer;
+		this._texture = renderer._device.createTexture({
 			usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
 			size: { width, height },
-			format: "rgba8unorm",
+			format: sRGB ? "rgba8unorm-srgb" : "rgba8unorm",
 		});
 		this._textureView = this._texture.createView({
-			format: "rgba8unorm",
+			format: sRGB ? "rgba8unorm-srgb" : "rgba8unorm",
 			dimension: "2d",
 		});
 	}
@@ -57,7 +63,7 @@ export class Texture2D {
 	}
 
 	writeTypedArray(data: Uint8Array): Texture2D {
-		this._device.queue.writeTexture(
+		this._renderer._device.queue.writeTexture(
 			{ texture: this._texture },
 			data,
 			{ bytesPerRow: 4 * this._texture.width },

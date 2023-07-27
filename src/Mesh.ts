@@ -7,11 +7,17 @@
 import { IndexBuffer } from "./IndexBuffer";
 import { VertexBuffer } from "./VertexBuffer";
 
+export type Submesh = {
+	start: number,
+	length: number,
+};
+
 export interface MeshProps {
 	readonly name?: string;
 
 	readonly vertexBuffer: VertexBuffer;
 	readonly indexBuffer: IndexBuffer;
+	readonly submeshes: Submesh[];
 }
 
 export class Mesh {
@@ -22,11 +28,13 @@ export class Mesh {
 
 	_vertexBuffer: VertexBuffer;
 	_indexBuffer: IndexBuffer;
+	_submeshes: Submesh[];
 
 	constructor({
 		name = "",
 		vertexBuffer,
 		indexBuffer,
+		submeshes,
 	}: MeshProps) {
 		Object.defineProperty(this, "type", { value: "Mesh" });
 
@@ -34,6 +42,11 @@ export class Mesh {
 
 		this._vertexBuffer = vertexBuffer;
 		this._indexBuffer = indexBuffer
+		this._submeshes = submeshes;
+	}
+
+	get submeshCount(): number {
+		return this._submeshes.length;
 	}
 }
 

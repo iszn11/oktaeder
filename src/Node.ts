@@ -5,6 +5,7 @@
  */
 
 import { Camera } from "./Camera";
+import { Material } from "./Material";
 import { Mesh } from "./Mesh";
 import { Quaternion, QuaternionObject } from "./Quaternion";
 import { Vector3, Vector3Object } from "./Vector3";
@@ -16,8 +17,9 @@ export interface NodeProps {
 	readonly rotation?: QuaternionObject;
 	readonly scale?: Vector3Object;
 
-	readonly camera?: Camera;
-	readonly mesh?: Mesh;
+	readonly camera?: Camera | null;
+	readonly mesh?: Mesh | null;
+	readonly materials?: Material[];
 
 	readonly children?: Node[];
 }
@@ -33,23 +35,26 @@ export class Node {
 	_scale: Vector3;
 
 	/** unique */
-	_camera: Camera | undefined;
+	_camera: Camera | null;
 	/** shared */
-	_mesh: Mesh | undefined;
+	_mesh: Mesh | null;
+	/** shared */
+	_materials: Material[];
 
 	/** unique */
 	_children: Node[];
 
 	/** backreference */
-	_parent: Node | undefined;
+	_parent: Node | null;
 
 	constructor({
 		name = "",
 		translation,
 		rotation,
 		scale,
-		camera,
-		mesh,
+		camera = null,
+		mesh = null,
+		materials = [],
 		children = [],
 	}: NodeProps) {
 		Object.defineProperty(this, "type", { value: "Node" });
@@ -62,16 +67,17 @@ export class Node {
 
 		this._camera = camera;
 		this._mesh = mesh;
+		this._materials = materials;
 
 		this._children = children;
 
-		this._parent = undefined;
+		this._parent = null;
 
-		if (this._camera !== undefined) {
+		if (this._camera !== null) {
 			this._camera._node = this;
 		}
 
-		if (this._children !== undefined) {
+		if (this._children !== null) {
 			for (const child of this._children) {
 				child._parent = this;
 			}

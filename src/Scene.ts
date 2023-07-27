@@ -16,7 +16,7 @@ export class Scene {
 
 	readonly type!: "Scene";
 
-	_name: string | undefined;
+	_name: string;
 
 	_nodes: Node[];
 

@@ -4,6 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import { Renderer } from "./Renderer";
 import { Vector3Object } from "./Vector3";
 
 export const VERTEX_SIZE = 12;
@@ -11,15 +12,16 @@ export const VERTEX_SIZE = 12;
 export class VertexBuffer {
 
 	readonly type!: "VertexBuffer";
+	_renderer: Renderer;
 
-	_device: GPUDevice;
 	_buffer: GPUBuffer;
 
-	constructor(device: GPUDevice, vertexCount: number) {
+	constructor(renderer: Renderer, vertexCount: number) {
 		Object.defineProperty(this, "type", { value: "VertexBuffer" });
 
-		this._device = device;
-		this._buffer = device.createBuffer({
+		this._renderer = renderer;
+
+		this._buffer = renderer._device.createBuffer({
 			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
 			size: vertexCount * VERTEX_SIZE,
 		});
@@ -42,12 +44,12 @@ export class VertexBuffer {
 			array[ptr++] = vertex.y;
 			array[ptr++] = vertex.z;
 		}
-		this._device.queue.writeBuffer(this._buffer, offset * VERTEX_SIZE | 0, array);
+		this._renderer._device.queue.writeBuffer(this._buffer, offset * VERTEX_SIZE | 0, array);
 		return this;
 	}
 
 	writeTypedArray(offset: number, vertices: Float32Array): VertexBuffer {
-		this._device.queue.writeBuffer(this._buffer, offset * VERTEX_SIZE | 0, vertices);
+		this._renderer._device.queue.writeBuffer(this._buffer, offset * VERTEX_SIZE | 0, vertices);
 		return this;
 	}
 }

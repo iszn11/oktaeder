@@ -35,7 +35,7 @@ export class CameraOrthographic {
 	_farPlane: number;
 
 	/** backreference */
-	_node: Node | undefined;
+	_node: Node | null;
 
 	constructor({
 		name = "",
@@ -51,16 +51,16 @@ export class CameraOrthographic {
 		this._nearPlane = nearPlane;
 		this._farPlane = farPlane;
 
-		this._node = undefined;
+		this._node = null;
 	}
 
 	detach(): Camera {
-		if (this._node === undefined) {
+		if (this._node === null) {
 			return this;
 		}
 
-		this._node._camera = undefined;
-		this._node = undefined;
+		this._node._camera = null;
+		this._node = null;
 		return this;
 	}
 }
@@ -76,7 +76,7 @@ export class CameraPerspective {
 	_farPlane: number;
 
 	/** backreference */
-	_node: Node | undefined;
+	_node: Node | null;
 
 	constructor({
 		name = "",
@@ -92,16 +92,16 @@ export class CameraPerspective {
 		this._nearPlane = nearPlane;
 		this._farPlane = farPlane;
 
-		this._node = undefined;
+		this._node = null;
 	}
 
 	detach(): Camera {
-		if (this._node === undefined) {
+		if (this._node === null) {
 			return this;
 		}
 
-		this._node._camera = undefined;
-		this._node = undefined;
+		this._node._camera = null;
+		this._node = null;
 		return this;
 	}
 }

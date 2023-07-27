@@ -4,20 +4,23 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import { Renderer } from "./Renderer";
+
 export const INDEX_SIZE = 2;
 
 export class IndexBuffer {
 
 	readonly type!: "IndexBuffer";
+	_renderer: Renderer;
 
-	_device: GPUDevice;
 	_buffer: GPUBuffer;
 
-	constructor(device: GPUDevice, indexCount: number) {
+	constructor(renderer: Renderer, indexCount: number) {
 		Object.defineProperty(this, "type", { value: "IndexBuffer" });
 
-		this._device = device;
-		this._buffer = device.createBuffer({
+		this._renderer = renderer;
+
+		this._buffer = renderer._device.createBuffer({
 			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
 			size: indexCount * INDEX_SIZE,
 		});
@@ -34,12 +37,12 @@ export class IndexBuffer {
 
 	writeArray(offset: number, indices: readonly number[]): IndexBuffer {
 		const array = new Uint16Array(indices);
-		this._device.queue.writeBuffer(this._buffer, offset * INDEX_SIZE | 0, array);
+		this._renderer._device.queue.writeBuffer(this._buffer, offset * INDEX_SIZE | 0, array);
 		return this;
 	}
 
 	writeTypedArray(offset: number, indices: Uint16Array): IndexBuffer {
-		this._device.queue.writeBuffer(this._buffer, offset * INDEX_SIZE | 0, indices);
+		this._renderer._device.queue.writeBuffer(this._buffer, offset * INDEX_SIZE | 0, indices);
 		return this;
 	}
 }
