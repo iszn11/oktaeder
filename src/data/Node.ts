@@ -4,11 +4,8 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Camera } from "./Camera";
-import { Material } from "./Material";
-import { Mesh } from "./Mesh";
-import { Quaternion, QuaternionObject } from "./Quaternion";
-import { Vector3, Vector3Object } from "./Vector3";
+import { Camera, Mesh, Quaternion, QuaternionObject, Vector3, Vector3Object } from ".";
+import { Material } from "../resources";
 
 export interface NodeProps {
 	readonly name?: string;
@@ -57,8 +54,6 @@ export class Node {
 		materials = [],
 		children = [],
 	}: NodeProps) {
-		Object.defineProperty(this, "type", { value: "Node" });
-
 		this._name = name;
 
 		this._translation = translation !== undefined ? Vector3.fromObject(translation) : Vector3.zero();
@@ -84,6 +79,8 @@ export class Node {
 		}
 	}
 }
+
+Object.defineProperty(Node.prototype, "type", { value: "Node" });
 
 export function isNode(value: unknown): value is Node {
 	return Boolean(value) && (value as Node).type === "Node";

@@ -4,8 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { QuaternionObject } from "./Quaternion";
-import { Vector3Object } from "./Vector3";
+import { QuaternionObject, Vector3Object } from ".";
 
 export interface Matrix4x4Object {
 	readonly ix: number;
@@ -60,8 +59,6 @@ export class Matrix4x4 {
 		kx: number, ky: number, kz: number, kw: number,
 		tx: number, ty: number, tz: number, tw: number
 	) {
-		Object.defineProperty(this, "type", { value: "Matrix4x4" });
-
 		this.ix = ix;
 		this.iy = iy;
 		this.iz = iz;
@@ -240,6 +237,8 @@ export class Matrix4x4 {
 		return this;
 	}
 }
+
+Object.defineProperty(Matrix4x4.prototype, "type", { value: "Matrix4x4" });
 
 export function isMatrix4x4(value: unknown): value is Matrix4x4 {
 	return Boolean(value) && (value as Matrix4x4).type === "Matrix4x4";

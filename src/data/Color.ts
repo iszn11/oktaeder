@@ -4,7 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Vector3Object } from "./Vector3";
+import { Vector3Object } from ".";
 
 /* Named colors
  * black       #000000   (0, 0, 0, 1)
@@ -63,8 +63,6 @@ export class Color {
 	b: number;
 
 	constructor(r: number, g: number, b: number) {
-		Object.defineProperty(this, "type", { value: "Color" });
-
 		this.r = r;
 		this.g = g;
 		this.b = b;
@@ -260,6 +258,8 @@ export class Color {
 		return this;
 	}
 }
+
+Object.defineProperty(Color.prototype, "type", { value: "Color" });
 
 export function isColor(value: unknown): value is Color {
 	return Boolean(value) && (value as Color).type === "Color";

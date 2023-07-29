@@ -21,8 +21,6 @@ export class Vector3 {
 	z: number;
 
 	constructor(x: number, y: number, z: number) {
-		Object.defineProperty(this, "type", { value: "Vector3" });
-
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -94,6 +92,8 @@ export class Vector3 {
 		return this;
 	}
 }
+
+Object.defineProperty(Vector3.prototype, "type", { value: "Vector3" });
 
 export function isVector3(value: unknown): value is Vector3 {
 	return Boolean(value) && (value as Vector3).type === "Vector3";

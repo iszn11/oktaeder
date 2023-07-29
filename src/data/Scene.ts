@@ -4,7 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Node } from "./Node";
+import { Node } from ".";
 
 export interface SceneProps {
 	readonly name?: string;
@@ -24,13 +24,13 @@ export class Scene {
 		name = "",
 		nodes = [],
 	}: SceneProps) {
-		Object.defineProperty(this, "type", { value: "Scene" });
-
 		this._name = name;
 
 		this._nodes = nodes;
 	}
 }
+
+Object.defineProperty(Scene.prototype, "type", { value: "Scene" });
 
 export function isScene(value: unknown): value is Scene {
 	return Boolean(value) && (value as Scene).type === "Scene";

@@ -4,9 +4,9 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Color, ColorObject } from "./Color";
-import { Renderer } from "./Renderer";
-import { Texture2D } from "./Texture2D";
+import { Texture2D } from ".";
+import { Color, ColorObject } from "../data";
+import { Renderer } from "../oktaeder";
 
 export const UNIFORM_BUFFER_SIZE = 64;
 
@@ -81,8 +81,6 @@ export class Material {
 		transparent = false,
 		doubleSided = false,
 	}: MaterialProps) {
-		Object.defineProperty(this, "type", { value: "Material" });
-
 		this._renderer = renderer;
 
 		this._name = name;
@@ -108,10 +106,17 @@ export class Material {
 		this._doubleSided = doubleSided;
 	}
 
+	/**
+	 * Destroys owned GPU resources. The material should not be used after
+	 * calling this method.
+	 * @returns `this` for chaining
+	 */
 	dispose(): Material {
 		return this;
 	}
 }
+
+Object.defineProperty(Material.prototype, "type", { value: "Material" });
 
 export function isMaterial(value: unknown): value is Material {
 	return Boolean(value) && (value as Material).type === "Material";

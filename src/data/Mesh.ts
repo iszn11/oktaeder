@@ -4,8 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { IndexBuffer } from "./IndexBuffer";
-import { VertexBuffer } from "./VertexBuffer";
+import { IndexBuffer, VertexBuffer } from "../resources";
 
 export type Submesh = {
 	start: number,
@@ -36,8 +35,6 @@ export class Mesh {
 		indexBuffer,
 		submeshes,
 	}: MeshProps) {
-		Object.defineProperty(this, "type", { value: "Mesh" });
-
 		this._name = name;
 
 		this._vertexBuffer = vertexBuffer;
@@ -49,6 +46,8 @@ export class Mesh {
 		return this._submeshes.length;
 	}
 }
+
+Object.defineProperty(Mesh.prototype, "type", { value: "Mesh" });
 
 export function isMesh(value: unknown): value is Mesh {
 	return Boolean(value) && (value as Mesh).type === "Mesh";

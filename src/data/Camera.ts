@@ -4,7 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Node } from "./Node";
+import { Node } from ".";
 
 export type Camera = CameraOrthographic | CameraPerspective;
 
@@ -43,8 +43,6 @@ export class CameraOrthographic {
 		nearPlane,
 		farPlane,
 	}: CameraOrthographicProps) {
-		Object.defineProperty(this, "type", { value: "CameraOrthographic" });
-
 		this._name = name;
 
 		this._verticalSize = verticalSize;
@@ -65,6 +63,8 @@ export class CameraOrthographic {
 	}
 }
 
+Object.defineProperty(CameraOrthographic.prototype, "type", { value: "CameraOrthographic" });
+
 export class CameraPerspective {
 
 	readonly type!: "CameraPerspective";
@@ -84,8 +84,6 @@ export class CameraPerspective {
 		nearPlane,
 		farPlane,
 	}: CameraPerspectiveProps) {
-		Object.defineProperty(this, "type", { value: "CameraPerspective" });
-
 		this._name = name;
 
 		this._verticalFovRad = verticalFovRad;
@@ -105,6 +103,8 @@ export class CameraPerspective {
 		return this;
 	}
 }
+
+Object.defineProperty(CameraPerspective.prototype, "type", { value: "CameraPerspective" });
 
 export function isCameraOrthographic(value: unknown): value is CameraOrthographic {
 	return Boolean(value) && (value as CameraOrthographic).type === "CameraOrthographic";

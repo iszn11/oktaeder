@@ -23,8 +23,6 @@ export class Quaternion {
 	w: number;
 
 	constructor(x: number, y: number, z: number, w: number) {
-		Object.defineProperty(this, "type", { value: "Quaternion" });
-
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -67,6 +65,8 @@ export class Quaternion {
 		return this;
 	}
 }
+
+Object.defineProperty(Quaternion.prototype, "type", { value: "Quaternion" });
 
 export function isQuaternion(value: unknown): value is Quaternion {
 	return Boolean(value) && (value as Quaternion).type === "Quaternion";
