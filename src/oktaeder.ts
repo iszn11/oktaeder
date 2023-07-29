@@ -4,6 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import { Camera, Scene } from "./data";
 import { IndexBuffer, IndexBufferProps, Material, MaterialProps, Texture2D, Texture2DProps, VertexBuffer, VertexBufferProps } from "./resources";
 
 export class Renderer {
@@ -19,6 +20,8 @@ export class Renderer {
 	_textureBlack: Texture2D;
 	/** 1×1 rgba8unorm texture of [128, 128, 128, 255] */
 	_textureNormal: Texture2D;
+
+	_depthBuffer: Texture2D;
 
 	/**
 	 * This constructor is intended primarily for internal use. Consider using
@@ -36,6 +39,7 @@ export class Renderer {
 		this._format = format;
 
 		this._textureWhite = new Texture2D(this, {
+			name: "White",
 			width: 1,
 			height: 1,
 			format: "linear",
@@ -43,6 +47,7 @@ export class Renderer {
 		this._textureWhite.writeFull(new Uint8Array([255, 255, 255, 255]));
 
 		this._textureBlack = new Texture2D(this, {
+			name: "Black",
 			width: 1,
 			height: 1,
 			format: "linear",
@@ -50,11 +55,20 @@ export class Renderer {
 		this._textureBlack.writeFull(new Uint8Array([0, 0, 0, 255]));
 
 		this._textureNormal = new Texture2D(this, {
+			name: "Normal",
 			width: 1,
 			height: 1,
 			format: "linear",
 		});
 		this._textureNormal.writeFull(new Uint8Array([128, 128, 128, 255]));
+
+		const framebufferTexture = this._context.getCurrentTexture();
+		this._depthBuffer = new Texture2D(this, {
+			name: "Depth Buffer",
+			width: framebufferTexture.width,
+			height: framebufferTexture.height,
+			format: "depth",
+		});
 	}
 
 	static async init(canvas: HTMLCanvasElement) {
@@ -90,6 +104,7 @@ export class Renderer {
 		this._textureWhite.dispose();
 		this._textureBlack.dispose();
 		this._textureNormal.dispose();
+		this._depthBuffer.dispose();
 		return this;
 	}
 
@@ -107,5 +122,37 @@ export class Renderer {
 
 	createVertexBuffer(props: VertexBufferProps): VertexBuffer {
 		return new VertexBuffer(this, props);
+	}
+
+	render(scene: Scene, camera: Camera): Renderer {
+		const { width, height } = this._context.getCurrentTexture();
+		if (this._depthBuffer.width !== width || this._depthBuffer.height !== height) {
+			this._depthBuffer.resizeDiscard({
+				width,
+				height,
+			});
+		}
+
+		const encoder = this._device.createCommandEncoder();
+
+		const pass = encoder.beginRenderPass({
+			colorAttachments: [{
+				view: this._context.getCurrentTexture().createView(),
+				loadOp: "clear",
+				storeOp: "store",
+			}],
+			depthStencilAttachment: {
+				view: this._depthBuffer._textureView,
+				depthClearValue: 0,
+				depthLoadOp: "clear",
+				depthStoreOp: "store",
+			},
+		});
+		pass.end();
+
+		const commandBuffer = encoder.finish();
+		this._device.queue.submit([commandBuffer]);
+
+		return this;
 	}
 }

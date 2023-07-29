@@ -15,17 +15,18 @@ export interface MaterialProps {
 
 	baseColor?: ColorObject;
 	partialCoverage?: number;
-	occlusionTextureStrength?: number;
-	metallic?: number;
-	roughness?: number;
-	normalScale?: number;
-	emissive?: ColorObject;
 	transmission?: ColorObject;
 	collimation?: number;
+	occlusionTextureStrength?: number;
+	roughness?: number;
+	metallic?: number;
+	normalScale?: number;
+	emissive?: ColorObject;
 	ior?: number;
 
 	baseColorPartialCoverageTexture?: Texture2D | null;
-	occlusionMetallicRoughnessTexture?: Texture2D | null;
+	occlusionTexture?: Texture2D | null;
+	metallicRoughnessTexture?: Texture2D | null;
 	normalTexture?: Texture2D | null;
 	emissiveTexture?: Texture2D | null;
 	transmissionCollimationTexture?: Texture2D | null;
@@ -53,7 +54,8 @@ export class Material {
 	_ior: number;
 
 	_baseColorPartialCoverageTexture: Texture2D | null;
-	_occlusionMetallicRoughnessTexture: Texture2D | null;
+	_occlusionTexture: Texture2D | null;
+	_metallicRoughnessTexture: Texture2D | null;
 	_normalTexture: Texture2D | null;
 	_emissiveTexture: Texture2D | null;
 	_transmissionCollimationTexture: Texture2D | null;
@@ -74,7 +76,8 @@ export class Material {
 		collimation = 1,
 		ior = 1.45,
 		baseColorPartialCoverageTexture = null,
-		occlusionMetallicRoughnessTexture = null,
+		occlusionTexture = null,
+		metallicRoughnessTexture = null,
 		normalTexture = null,
 		emissiveTexture = null,
 		transmissionCollimationTexture = null,
@@ -97,7 +100,8 @@ export class Material {
 		this._ior = ior;
 
 		this._baseColorPartialCoverageTexture = baseColorPartialCoverageTexture;
-		this._occlusionMetallicRoughnessTexture = occlusionMetallicRoughnessTexture;
+		this._occlusionTexture = occlusionTexture;
+		this._metallicRoughnessTexture = metallicRoughnessTexture;
 		this._normalTexture = normalTexture;
 		this._emissiveTexture = emissiveTexture;
 		this._transmissionCollimationTexture = transmissionCollimationTexture;

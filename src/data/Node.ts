@@ -4,7 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Camera, Mesh, Quaternion, QuaternionObject, Vector3, Vector3Object } from ".";
+import { Camera, Matrix4x4, Mesh, Quaternion, QuaternionObject, Vector3, Vector3Object } from ".";
 import { Material } from "../resources";
 
 export interface NodeProps {
@@ -44,6 +44,9 @@ export class Node {
 	/** backreference */
 	_parent: Node | null;
 
+	_localMatrix: Matrix4x4;
+	_worldMatrix: Matrix4x4;
+
 	constructor({
 		name = "",
 		translation,
@@ -67,6 +70,9 @@ export class Node {
 		this._children = children;
 
 		this._parent = null;
+
+		this._localMatrix = Matrix4x4.fromTRS(this._translation, this._rotation, this._scale);
+		this._worldMatrix = Matrix4x4.fromObject(this._localMatrix);
 
 		if (this._camera !== null) {
 			this._camera._node = this;

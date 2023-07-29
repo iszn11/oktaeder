@@ -127,6 +127,25 @@ export class Matrix4x4 {
 		);
 	}
 
+	static fromTRS(t: Vector3Object, r: QuaternionObject, s: Vector3Object): Matrix4x4 {
+		const xx = r.x * r.x;
+		const xy = r.x * r.y;
+		const xz = r.x * r.z;
+		const xw = r.x * r.w;
+		const yy = r.y * r.y;
+		const yz = r.y * r.z;
+		const yw = r.y * r.w;
+		const zz = r.z * r.z;
+		const zw = r.z * r.w;
+
+		return new Matrix4x4(
+			s.x * (1 - 2 * (yy + zz)), s.x * 2 * (xy + zw), s.x * 2 * (xz - yw), 0,
+			s.y * 2 * (xy - zw), s.y * (1 - 2 * (xx + zz)), s.y * 2 * (yz + xw), 0,
+			s.z * 2 * (xz + yw), s.z * 2 * (yz - xw), s.z * (1 - 2 * (xx + yy)), 0,
+			t.x, t.y, t.z, 1,
+		);
+	}
+
 	setObject(object: Matrix4x4Object): Matrix4x4 {
 		this.ix = object.ix;
 		this.iy = object.iy;
@@ -234,6 +253,61 @@ export class Matrix4x4 {
 		this.ty = 0;
 		this.tz = 0;
 		this.tw = 1;
+		return this;
+	}
+
+	setTRS(t: Vector3Object, r: QuaternionObject, s: Vector3Object): Matrix4x4 {
+		const xx = r.x * r.x;
+		const xy = r.x * r.y;
+		const xz = r.x * r.z;
+		const xw = r.x * r.w;
+		const yy = r.y * r.y;
+		const yz = r.y * r.z;
+		const yw = r.y * r.w;
+		const zz = r.z * r.z;
+		const zw = r.z * r.w;
+
+		this.ix = s.x * (1 - 2 * (yy + zz));
+		this.iy = s.x * 2 * (xy + zw);
+		this.iz = s.x * 2 * (xz - yw);
+		this.iw = 0;
+		this.jx = s.y * 2 * (xy - zw);
+		this.jy = s.y * (1 - 2 * (xx + zz));
+		this.jz = s.y * 2 * (yz + xw);
+		this.jw = 0;
+		this.kx = s.z * 2 * (xz + yw);
+		this.ky = s.z * 2 * (yz - xw);
+		this.kz = s.z * (1 - 2 * (xx + yy));
+		this.kw = 0;
+		this.tx = t.x;
+		this.ty = t.y;
+		this.tz = t.z;
+		this.tw = 1;
+		return this;
+	}
+
+	add(m: Matrix4x4): Matrix4x4 {
+		throw new Error("TODO");
+		return this;
+	}
+
+	sub(m: Matrix4x4): Matrix4x4 {
+		throw new Error("TODO");
+		return this;
+	}
+
+	mulScalar(k: number): Matrix4x4 {
+		throw new Error("TODO");
+		return this;
+	}
+
+	mulMatrix(m: Matrix4x4): Matrix4x4 {
+		throw new Error("TODO");
+		return this;
+	}
+
+	premulMatrix(m: Matrix4x4): Matrix4x4 {
+		throw new Error("TODO");
 		return this;
 	}
 }
