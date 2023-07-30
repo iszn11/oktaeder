@@ -148,6 +148,10 @@ export class Renderer {
 				depthStoreOp: "store",
 			},
 		});
+
+		void scene;
+		void camera;
+
 		pass.end();
 
 		const commandBuffer = encoder.finish();

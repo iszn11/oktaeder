@@ -132,5 +132,24 @@ fn frag(fragment: Varyings) -> @location(0) vec2<f32> {
 		let occlusionTexel = texture(_OcclusionTexture, _Sampler, fragment.lightTexCoord);
 		occlusion += _Material.occlusionTextureStrength * (occlusionTexel.r - 1.0);
 	` : ""}
+
+	let positionVS = fragment.positionVS;
+	${normal ? `
+		let geometricNormalVS = fragment.normalVS;
+	` : `
+		let dPositionVSdx = dpdx(positionVS);
+		let dPositionVSdy = dpdy(positionVS);
+		let geometricNormalVS = normalize(cross(dPositionVSdx, dPositionVSdy));
+		let actualNormalVS = geometricNormalVS;
+	`}
+	${texCoord ? `
+	` : `
+		let actualNormalVS = geometricNormalVS;
+	`}
+	${tangent ? `
+		let tangentVS =
+	` : `
+		let actualNormalVS = geometricNormalVS;
+	`}
 }`;
 }

@@ -52,7 +52,33 @@ export class CameraOrthographic {
 		this._node = null;
 	}
 
-	detach(): Camera {
+	set name(value: string) { this._name = value; }
+	get name(): string { return this._name; }
+
+	set verticalSize(value: number) { this._verticalSize = value; }
+	get verticalSize(): number { return this._verticalSize; }
+
+	set nearPlane(value: number) { this._nearPlane = value; }
+	get nearPlane(): number { return this._nearPlane; }
+
+	set farPlane(value: number) { this._farPlane = value; }
+	get farPlane(): number { return this._farPlane; }
+
+	attach(node: Node): CameraOrthographic {
+		if (this._node !== null) {
+			this._node._camera = null;
+		}
+
+		if (node._camera !== null) {
+			node._camera._node = null;
+		}
+
+		node._camera = this;
+		this._node = node;
+		return this;
+	}
+
+	detach(): CameraOrthographic {
 		if (this._node === null) {
 			return this;
 		}
@@ -93,7 +119,30 @@ export class CameraPerspective {
 		this._node = null;
 	}
 
-	detach(): Camera {
+	set name(value: string) { this._name = value; }
+	get name(): string { return this._name; }
+
+	set nearPlane(value: number) { this._nearPlane = value; }
+	get nearPlane(): number { return this._nearPlane; }
+
+	set farPlane(value: number) { this._farPlane = value; }
+	get farPlane(): number { return this._farPlane; }
+
+	attach(node: Node): CameraPerspective {
+		if (this._node !== null) {
+			this._node._camera = null;
+		}
+
+		if (node._camera !== null) {
+			node._camera._node = null;
+		}
+
+		node._camera = this;
+		this._node = node;
+		return this;
+	}
+
+	detach(): CameraPerspective {
 		if (this._node === null) {
 			return this;
 		}

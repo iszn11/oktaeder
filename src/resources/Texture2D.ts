@@ -23,6 +23,12 @@ export interface Texture2DProps {
 	readonly format: Texture2DFormat;
 }
 
+export interface Texture2DResizeProps {
+	readonly width?: number;
+	readonly height?: number;
+	readonly format?: Texture2DFormat;
+}
+
 export interface Texture2DAdvancedWriteProps {
 	readonly origin: Vector2Object | Vector2Tuple,
 	readonly data: BufferSource | SharedArrayBuffer,
@@ -69,6 +75,11 @@ export class Texture2D {
 		this._format = format;
 	}
 
+	/**
+	 * Destroys owned GPU resources. The texture should not be used after
+	 * calling this method.
+	 * @returns `this` for chaining
+	 */
 	dispose(): Texture2D {
 		this._texture.destroy();
 		return this;
@@ -122,6 +133,36 @@ export class Texture2D {
 			{ bytesPerRow },
 			{ width, height },
 		);
+		return this;
+	}
+
+	/**
+	 * Resize the texture and/or change its format, discarding currently stored
+	 * data.
+	 * @param props Desired texture properties. Any unspecified property will
+	 * stay unchanged.
+	 * @returns `this` for chaining
+	 */
+	resizeDiscard({
+		width = this._texture.width,
+		height = this._texture.height,
+		format = this._format,
+	}: Texture2DResizeProps): Texture2D {
+		this._texture.destroy();
+
+		const gpuFormat = gpuTextureFormat(format);
+
+		this._texture = this._renderer._device.createTexture({
+			usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+			size: { width, height },
+			format: gpuFormat,
+			label: this._name
+		});
+		this._textureView = this._texture.createView({
+			format: gpuFormat,
+			dimension: "2d",
+			label: `${this._name}.textureView`,
+		});
 		return this;
 	}
 }

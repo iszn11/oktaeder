@@ -107,7 +107,7 @@ export class IndexBuffer {
 	ensureSizeDiscard({
 		indexFormat = this._indexFormat,
 		indexCount = this.indexCount,
-	}): IndexBuffer {
+	}: IndexBufferResizeProps): IndexBuffer {
 		if (this.indexCount >= indexCount && indexSize(this._indexFormat) >= indexSize(indexFormat)) {
 			return this;
 		}

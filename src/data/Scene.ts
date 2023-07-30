@@ -28,6 +28,9 @@ export class Scene {
 
 		this._nodes = nodes;
 	}
+
+	set name(value: string) { this._name = value; }
+	get name(): string { return this._name; }
 }
 
 Object.defineProperty(Scene.prototype, "type", { value: "Scene" });
