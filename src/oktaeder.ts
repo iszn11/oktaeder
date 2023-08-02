@@ -4,8 +4,13 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+export * from "./_BinaryWriter";
+export * from "./shader";
+
+import { _BinaryWriter as BinaryWriter } from "./_BinaryWriter";
 import { Camera, Scene } from "./data";
 import { IndexBuffer, IndexBufferProps, Material, MaterialProps, Texture2D, Texture2DProps, VertexBuffer, VertexBufferProps } from "./resources";
+import { ShaderFlagKey, ShaderFlags, createPipeline, shaderFlagsKey } from "./shader";
 
 export class Renderer {
 
@@ -23,11 +28,20 @@ export class Renderer {
 
 	_depthBuffer: Texture2D;
 
+	_globalBindGroupLayout: GPUBindGroupLayout;
+	_materialBindGroupLayout: GPUBindGroupLayout;
+	_objectBindGroupLayout: GPUBindGroupLayout;
+	_pipelineLayout: GPUPipelineLayout;
+
+	_pipelineCache: Map<ShaderFlagKey, GPURenderPipeline>;
+
+	_uniformWriter: BinaryWriter;
+
 	/**
 	 * This constructor is intended primarily for internal use. Consider using
 	 * `Renderer.createIndexBuffer` instead.
 	 */
-	private constructor (
+	private constructor(
 		adapter: GPUAdapter,
 		device: GPUDevice,
 		context: GPUCanvasContext,
@@ -69,9 +83,130 @@ export class Renderer {
 			height: framebufferTexture.height,
 			format: "depth",
 		});
+
+		this._globalBindGroupLayout = device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+					buffer: {
+						hasDynamicOffset: true,
+						type: "uniform",
+					},
+				},
+				{
+					binding: 1,
+					visibility: GPUShaderStage.FRAGMENT,
+					buffer: {
+						hasDynamicOffset: true,
+						type: "read-only-storage",
+					},
+				},
+				{
+					binding: 2,
+					visibility: GPUShaderStage.FRAGMENT,
+					buffer: {
+						hasDynamicOffset: true,
+						type: "read-only-storage",
+					},
+				},
+			],
+			label: "Global",
+		});
+		this._materialBindGroupLayout = device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.FRAGMENT,
+					buffer: {
+						hasDynamicOffset: true,
+						type: "uniform",
+					},
+				},
+				{
+					binding: 1,
+					visibility: GPUShaderStage.FRAGMENT,
+					sampler: { type: "filtering" },
+				},
+				{
+					binding: 2,
+					visibility: GPUShaderStage.FRAGMENT,
+					texture: {
+						sampleType: "float",
+						viewDimension: "2d",
+					},
+				},
+				{
+					binding: 3,
+					visibility: GPUShaderStage.FRAGMENT,
+					texture: {
+						sampleType: "float",
+						viewDimension: "2d",
+					},
+				},
+				{
+					binding: 4,
+					visibility: GPUShaderStage.FRAGMENT,
+					texture: {
+						sampleType: "float",
+						viewDimension: "2d",
+					},
+				},
+				{
+					binding: 5,
+					visibility: GPUShaderStage.FRAGMENT,
+					texture: {
+						sampleType: "float",
+						viewDimension: "2d",
+					},
+				},
+				{
+					binding: 6,
+					visibility: GPUShaderStage.FRAGMENT,
+					texture: {
+						sampleType: "float",
+						viewDimension: "2d",
+					},
+				},
+				{
+					binding: 7,
+					visibility: GPUShaderStage.FRAGMENT,
+					texture: {
+						sampleType: "float",
+						viewDimension: "2d",
+					},
+				},
+			],
+			label: "Material",
+		});
+		this._objectBindGroupLayout = device.createBindGroupLayout({
+			entries: [
+				{
+					binding: 0,
+					visibility: GPUShaderStage.VERTEX,
+					buffer: {
+						hasDynamicOffset: true,
+						type: "uniform",
+					},
+				},
+			],
+			label: "Object",
+		});
+
+		this._pipelineLayout = device.createPipelineLayout({
+			bindGroupLayouts: [
+				this._globalBindGroupLayout,
+				this._materialBindGroupLayout,
+				this._objectBindGroupLayout,
+			],
+		});
+
+		this._pipelineCache = new Map();
+
+		this._uniformWriter = new BinaryWriter();
 	}
 
-	static async init(canvas: HTMLCanvasElement) {
+	static async init(canvas: HTMLCanvasElement): Promise<Renderer> {
 		if (!navigator.gpu) {
 			throw new Error("WebGPU is not supported");
 		}
@@ -92,6 +227,8 @@ export class Renderer {
 
 		const format = navigator.gpu.getPreferredCanvasFormat();
 		context.configure({ device, format });
+
+		return new Renderer(adapter, device, context, format);
 	}
 
 	/**
@@ -122,6 +259,19 @@ export class Renderer {
 
 	createVertexBuffer(props: VertexBufferProps): VertexBuffer {
 		return new VertexBuffer(this, props);
+	}
+
+	_getOrCreatePipeline(flags: ShaderFlags): GPURenderPipeline {
+		const key = shaderFlagsKey(flags);
+
+		let pipeline = this._pipelineCache.get(key);
+		if (pipeline !== undefined) {
+			return pipeline;
+		}
+
+		pipeline = createPipeline(this, flags);
+		this._pipelineCache.set(key, pipeline);
+		return pipeline;
 	}
 
 	render(scene: Scene, camera: Camera): Renderer {

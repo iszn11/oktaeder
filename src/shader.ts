@@ -1,8 +1,127 @@
+import { Renderer } from "./oktaeder";
+
+export type ShaderFlagKey = number;
+
 export interface ShaderFlags {
-	texCoord: boolean;
-	lightTexCoord: boolean;
-	normal: boolean;
-	tangent: boolean;
+	readonly texCoord: boolean;
+	readonly lightTexCoord: boolean;
+	readonly normal: boolean;
+	readonly tangent: boolean;
+}
+
+export function shaderFlagsKey({
+	texCoord,
+	lightTexCoord,
+	normal,
+	tangent,
+}: ShaderFlags): ShaderFlagKey {
+	let key = 0;
+	key |= Number(texCoord) << 0;
+	key |= Number(lightTexCoord) << 1;
+	key |= Number(normal) << 2;
+	key |= Number(tangent) << 3;
+	return key;
+}
+
+export function createPipeline(renderer: Renderer, {
+	texCoord,
+	lightTexCoord,
+	normal,
+	tangent,
+}: ShaderFlags): GPURenderPipeline {
+	const shaderCode = createShaderCode({ texCoord, lightTexCoord, normal, tangent });
+
+	const shaderModule = renderer._device.createShaderModule({
+		code: shaderCode,
+		hints: {
+			"vert": { layout: renderer._pipelineLayout },
+			"frag": { layout: renderer._pipelineLayout },
+		},
+	});
+
+	let vertexLocation = 0;
+
+	const pipeline = renderer._device.createRenderPipeline({
+		layout: renderer._pipelineLayout,
+		vertex: {
+			entryPoint: "vert",
+			module: shaderModule,
+			buffers: [
+				{
+					arrayStride: 12,
+					attributes: [{
+						shaderLocation: vertexLocation++,
+						format: "float32x3",
+						offset: 0,
+					}],
+				},
+				...(texCoord ? [{
+					arrayStride: 8,
+					attributes: [{
+						shaderLocation: vertexLocation++,
+						format: "float32x2",
+						offset: 0,
+					}],
+				} satisfies GPUVertexBufferLayout] : []),
+				...(lightTexCoord ? [{
+					arrayStride: 8,
+					attributes: [{
+						shaderLocation: vertexLocation++,
+						format: "float32x2",
+						offset: 0,
+					}],
+				} satisfies GPUVertexBufferLayout] : []),
+				...(normal ? [{
+					arrayStride: 12,
+					attributes: [{
+						shaderLocation: vertexLocation++,
+						format: "float32x3",
+						offset: 0,
+					}],
+				} satisfies GPUVertexBufferLayout] : []),
+				...(tangent ? [{
+					arrayStride: 16,
+					attributes: [{
+						shaderLocation: vertexLocation++,
+						format: "float32x4",
+						offset: 0,
+					}],
+				} satisfies GPUVertexBufferLayout] : []),
+			],
+		},
+		fragment: {
+			entryPoint: "frag",
+			module: shaderModule,
+			targets: [{
+				format: renderer._format,
+				blend: {
+					color: {
+						operation: "add",
+						srcFactor: "one",
+						dstFactor: "one-minus-src-alpha",
+					},
+					alpha: {
+						operation: "add",
+						srcFactor: "one",
+						dstFactor: "one-minus-src-alpha",
+					},
+				},
+				writeMask: GPUColorWrite.ALL,
+			}],
+		},
+		depthStencil: {
+			depthCompare: "greater",
+			depthWriteEnabled: true,
+			format: "depth32float",
+		},
+		primitive: {
+			cullMode: "back",
+			frontFace: "ccw",
+			topology: "triangle-list",
+		},
+	});
+
+	return pipeline;
 }
 
 export function createShaderCode({
@@ -84,6 +203,24 @@ struct ObjectUniforms {
 @group(1) @binding(6) var _EmissiveTexture: texture_2d<f32>;
 @group(1) @binding(7) var _TransmissionCollimationTexture: texture_2d<f32>;
 
+fn screenSpaceMatrixTStoVS(positionVS: vec3<f32>, normalVS: vec3<f32>, texCoord: vec2<f32>) -> mat3x3<f32> {
+	let q0 = dpdx(positionVS);
+	let q1 = dpdy(positionVS);
+	let uv0 = dpdx(texCoord);
+	let uv1 = dpdy(texCoord);
+
+	let q1perp = cross(q1, normalVS);
+	let q0perp = cross(normalVS, q0);
+
+	let tangentVS = q1perp * uv0.x + q0perp * uv1.x;
+	let bitangentVS = q1perp * uv0.y + q0perp * uv1.y;
+
+	let det = max(dot(tangentVS, tangentVS), dot(bitangentVS, bitangentVS));
+	let scale = (det == 0.0) ? 0.0 : inserseSqrt(det);
+
+	return mat3x3(tangentVS * scale, bitangentVS * scale, normalVS);
+}
+
 @vertex
 fn vert(vertex: Vertex) -> Varyings {
 	var output: Varyings;
@@ -122,7 +259,7 @@ fn frag(fragment: Varyings) -> @location(0) vec2<f32> {
 		let baseColorPartialCoverageTexel = texture(_BaseColorPartialCoverageTexture, _Sampler, fragment.texCoord);
 		baseColor *= baseColorPartialCoverageTexel.rgb;
 		partialCoverage *= baseColorPartialCoverageTexel.a;
-		let roughnessMetallicTexel = texture(_RoughnessMetallic, _Sampler, fragment.texCoord);
+		let roughnessMetallicTexel = texture(_RoughnessMetallicTexture, _Sampler, fragment.texCoord);
 		roughness *= roughnessMetallicTexel.g;
 		metallic *= roughnessMetallicTexel.b;
 		let emissiveTexel = texture(_EmissiveTexture, _Sampler, fragment.texCoord);
@@ -140,14 +277,19 @@ fn frag(fragment: Varyings) -> @location(0) vec2<f32> {
 		let dPositionVSdx = dpdx(positionVS);
 		let dPositionVSdy = dpdy(positionVS);
 		let geometricNormalVS = normalize(cross(dPositionVSdx, dPositionVSdy));
-		let actualNormalVS = geometricNormalVS;
 	`}
 	${texCoord ? `
-	` : `
-		let actualNormalVS = geometricNormalVS;
-	`}
-	${tangent ? `
-		let tangentVS =
+		${tangent ? `
+			let tangentVS = normalize(fragment.tangentVS);
+			let bitangentVS = normalize(fragment.bitangentVS);
+			let matrixTStoVS = mat3x3(tangentVS, bitangentVS, geometricNormalVS);
+		` : `
+			let matrixTStoVS = screenSpaceMatrixTStoVS(positionVS, geometricNormalVS, fragment.texCoord);
+		`}
+		let normalTextureTexel = texture(_NormalTexture, _Sampler, fragment.texCoord);
+		var normalTS = normalTextureTexel.xyz * 2.0 - 1.0;
+		normalTS.xy *= _Material.normalScale;
+		let actualNormalVS = normalize(matrixTStoVS * geometricNormalVS);
 	` : `
 		let actualNormalVS = geometricNormalVS;
 	`}
