@@ -4,9 +4,8 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Texture2D } from ".";
-import { Color, ColorObject } from "../data";
-import { Renderer } from "../oktaeder";
+import { Color, ColorObject } from ".";
+import { Texture2D } from "../resources";
 
 export const UNIFORM_BUFFER_SIZE = 64;
 
@@ -26,7 +25,7 @@ export interface MaterialProps {
 
 	baseColorPartialCoverageTexture?: Texture2D | null;
 	occlusionTexture?: Texture2D | null;
-	metallicRoughnessTexture?: Texture2D | null;
+	roughnessMetallicTexture?: Texture2D | null;
 	normalTexture?: Texture2D | null;
 	emissiveTexture?: Texture2D | null;
 	transmissionCollimationTexture?: Texture2D | null;
@@ -38,7 +37,6 @@ export interface MaterialProps {
 export class Material {
 
 	readonly type!: "Material";
-	_renderer: Renderer;
 
 	_name: string;
 
@@ -55,7 +53,7 @@ export class Material {
 
 	_baseColorPartialCoverageTexture: Texture2D | null;
 	_occlusionTexture: Texture2D | null;
-	_metallicRoughnessTexture: Texture2D | null;
+	_roughnessMetallicTexture: Texture2D | null;
 	_normalTexture: Texture2D | null;
 	_emissiveTexture: Texture2D | null;
 	_transmissionCollimationTexture: Texture2D | null;
@@ -63,7 +61,7 @@ export class Material {
 	_transparent: boolean;
 	_doubleSided: boolean;
 
-	constructor(renderer: Renderer, {
+	constructor({
 		name = "",
 		baseColor,
 		partialCoverage = 1,
@@ -77,15 +75,13 @@ export class Material {
 		ior = 1.45,
 		baseColorPartialCoverageTexture = null,
 		occlusionTexture = null,
-		metallicRoughnessTexture = null,
+		roughnessMetallicTexture = null,
 		normalTexture = null,
 		emissiveTexture = null,
 		transmissionCollimationTexture = null,
 		transparent = false,
 		doubleSided = false,
 	}: MaterialProps) {
-		this._renderer = renderer;
-
 		this._name = name;
 
 		this._baseColor = baseColor !== undefined ? Color.fromObject(baseColor) : Color.white();
@@ -101,22 +97,13 @@ export class Material {
 
 		this._baseColorPartialCoverageTexture = baseColorPartialCoverageTexture;
 		this._occlusionTexture = occlusionTexture;
-		this._metallicRoughnessTexture = metallicRoughnessTexture;
+		this._roughnessMetallicTexture = roughnessMetallicTexture;
 		this._normalTexture = normalTexture;
 		this._emissiveTexture = emissiveTexture;
 		this._transmissionCollimationTexture = transmissionCollimationTexture;
 
 		this._transparent = transparent;
 		this._doubleSided = doubleSided;
-	}
-
-	/**
-	 * Destroys owned GPU resources. The material should not be used after
-	 * calling this method.
-	 * @returns `this` for chaining
-	 */
-	dispose(): Material {
-		return this;
 	}
 }
 

@@ -4,8 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Camera, Matrix4x4, Mesh, Quaternion, QuaternionObject, Vector3, Vector3Object } from ".";
-import { Material } from "../resources";
+import { Camera, Light, Material, Matrix4x4, Mesh, Quaternion, QuaternionObject, Vector3, Vector3Object } from ".";
 
 export interface NodeProps {
 	readonly name?: string;
@@ -15,6 +14,7 @@ export interface NodeProps {
 	readonly scale?: Vector3Object;
 
 	readonly camera?: Camera | null;
+	readonly light?: Light | null;
 	readonly mesh?: Mesh | null;
 	readonly materials?: Material[];
 
@@ -33,6 +33,8 @@ export class Node {
 
 	/** unique */
 	_camera: Camera | null;
+	/** unique */
+	_light: Light | null;
 	/** shared */
 	_mesh: Mesh | null;
 	/** shared */
@@ -56,6 +58,7 @@ export class Node {
 		rotation,
 		scale,
 		camera = null,
+		light = null,
 		mesh = null,
 		materials = [],
 		children = [],
@@ -67,6 +70,7 @@ export class Node {
 		this._scale = scale !== undefined ? Vector3.fromObject(scale) : Vector3.one();
 
 		this._camera = camera;
+		this._light = light;
 		this._mesh = mesh;
 		this._materials = materials;
 
@@ -94,12 +98,19 @@ export class Node {
 			this._camera._node = this;
 		}
 
+		if (this._light !== null) {
+			this._light._node = this;
+		}
+
 		if (this._children !== null) {
 			for (const child of this._children) {
 				child._parent = this;
 			}
 		}
 	}
+
+	set name(value: string) { this._name = value; }
+	get name(): string { return this._name; }
 
 	setTranslation(value: Vector3Object): Node {
 		this._translation.setObject(value);
@@ -109,8 +120,7 @@ export class Node {
 	}
 
 	getTranslation(res: Vector3): Vector3 {
-		res.setObject(this._translation);
-		return res;
+		return res.setObject(this._translation);
 	}
 
 	setRotation(value: QuaternionObject): Node {
@@ -121,8 +131,7 @@ export class Node {
 	}
 
 	getRotation(res: Quaternion): Quaternion {
-		res.setObject(this._rotation);
-		return res;
+		return res.setObject(this._rotation);
 	}
 
 	setScale(value: Vector3Object): Node {
@@ -133,8 +142,7 @@ export class Node {
 	}
 
 	getScale(res: Vector3): Vector3 {
-		res.setObject(this._scale);
-		return res;
+		return res.setObject(this._scale);
 	}
 
 	set camera(value: Camera | null) {
@@ -169,6 +177,41 @@ export class Node {
 
 		this._camera._node = null;
 		this._camera = null;
+		return this;
+	}
+
+	set light(value: Light | null) {
+		if (value !== null) {
+			this.attachLight(value);
+		} else {
+			this.detachLight();
+		}
+	}
+	get light(): Light | null { return this._light; }
+
+	attachLight(light: Light): Node {
+		if (this._light !== null) {
+			this._light._node = null;
+		}
+
+		this._light = light;
+
+		if (light._node !== null) {
+			light._node._light = null;
+		}
+
+		light._node = this;
+		this._light = light;
+		return this;
+	}
+
+	detachLight(): Node {
+		if (this._light === null) {
+			return this;
+		}
+
+		this._light._node = null;
+		this._light = null;
 		return this;
 	}
 
@@ -268,4 +311,11 @@ Object.defineProperty(Node.prototype, "type", { value: "Node" });
 
 export function isNode(value: unknown): value is Node {
 	return Boolean(value) && (value as Node).type === "Node";
+}
+
+export function* preOrder(nodes: Iterable<Node>): Generator<Node, void, undefined> {
+	for (const node of nodes) {
+		yield node;
+		yield* node._children;
+	}
 }

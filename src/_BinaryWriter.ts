@@ -1,4 +1,10 @@
-import { Matrix4x4Object, Vector2Object, Vector3Object, Vector4Object } from "./data";
+/*!
+ * This Source Code Form is subject to the terms of the Mozilla Public License,
+ * v. 2.0. If a copy of the MPL was not distributed with this file, You can
+ * obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+import { ColorObject, Matrix4x4Object, Vector2Object, Vector3Object, Vector4Object } from "./data";
 
 export class _BinaryWriter {
 
@@ -100,6 +106,13 @@ export class _BinaryWriter {
 		this.writeF32(value.ty);
 		this.writeF32(value.tz);
 		this.writeF32(value.tw);
+		return this;
+	}
+
+	writeColorF32(value: ColorObject): _BinaryWriter {
+		this.writeF32(value.r);
+		this.writeF32(value.g);
+		this.writeF32(value.b);
 		return this;
 	}
 

@@ -6,9 +6,9 @@
 
 import { Node } from ".";
 
-export type Camera = CameraOrthographic | CameraPerspective;
+export type Camera = OrthographicCamera | PerspectiveCamera;
 
-export interface CameraOrthographicProps {
+export interface OrthographicCameraProps {
 	readonly name?: string;
 
 	readonly verticalSize: number;
@@ -16,7 +16,7 @@ export interface CameraOrthographicProps {
 	readonly farPlane: number;
 }
 
-export interface CameraPerspectiveProps {
+export interface PerspectiveCameraProps {
 	readonly name?: string;
 
 	readonly verticalFovRad: number;
@@ -24,9 +24,9 @@ export interface CameraPerspectiveProps {
 	readonly farPlane: number;
 }
 
-export class CameraOrthographic {
+export class OrthographicCamera {
 
-	readonly type!: "CameraOrthographic";
+	readonly type!: "OrthographicCamera";
 
 	_name: string;
 
@@ -42,7 +42,7 @@ export class CameraOrthographic {
 		verticalSize,
 		nearPlane,
 		farPlane,
-	}: CameraOrthographicProps) {
+	}: OrthographicCameraProps) {
 		this._name = name;
 
 		this._verticalSize = verticalSize;
@@ -64,7 +64,7 @@ export class CameraOrthographic {
 	set farPlane(value: number) { this._farPlane = value; }
 	get farPlane(): number { return this._farPlane; }
 
-	attach(node: Node): CameraOrthographic {
+	attach(node: Node): OrthographicCamera {
 		if (this._node !== null) {
 			this._node._camera = null;
 		}
@@ -78,7 +78,7 @@ export class CameraOrthographic {
 		return this;
 	}
 
-	detach(): CameraOrthographic {
+	detach(): OrthographicCamera {
 		if (this._node === null) {
 			return this;
 		}
@@ -89,11 +89,9 @@ export class CameraOrthographic {
 	}
 }
 
-Object.defineProperty(CameraOrthographic.prototype, "type", { value: "CameraOrthographic" });
+export class PerspectiveCamera {
 
-export class CameraPerspective {
-
-	readonly type!: "CameraPerspective";
+	readonly type!: "PerspectiveCamera";
 
 	_name: string;
 
@@ -109,7 +107,7 @@ export class CameraPerspective {
 		verticalFovRad,
 		nearPlane,
 		farPlane,
-	}: CameraPerspectiveProps) {
+	}: PerspectiveCameraProps) {
 		this._name = name;
 
 		this._verticalFovRad = verticalFovRad;
@@ -128,7 +126,7 @@ export class CameraPerspective {
 	set farPlane(value: number) { this._farPlane = value; }
 	get farPlane(): number { return this._farPlane; }
 
-	attach(node: Node): CameraPerspective {
+	attach(node: Node): PerspectiveCamera {
 		if (this._node !== null) {
 			this._node._camera = null;
 		}
@@ -142,7 +140,7 @@ export class CameraPerspective {
 		return this;
 	}
 
-	detach(): CameraPerspective {
+	detach(): PerspectiveCamera {
 		if (this._node === null) {
 			return this;
 		}
@@ -153,12 +151,14 @@ export class CameraPerspective {
 	}
 }
 
-Object.defineProperty(CameraPerspective.prototype, "type", { value: "CameraPerspective" });
+Object.defineProperty(OrthographicCamera.prototype, "type", { value: "OrthographicCamera" });
 
-export function isCameraOrthographic(value: unknown): value is CameraOrthographic {
-	return Boolean(value) && (value as CameraOrthographic).type === "CameraOrthographic";
+Object.defineProperty(PerspectiveCamera.prototype, "type", { value: "PerspectiveCamera" });
+
+export function isOrthographicCamera(value: unknown): value is OrthographicCamera {
+	return Boolean(value) && (value as OrthographicCamera).type === "OrthographicCamera";
 }
 
-export function isCameraPerspective(value: unknown): value is CameraPerspective {
-	return Boolean(value) && (value as CameraPerspective).type === "CameraPerspective";
+export function isPerspectiveCamera(value: unknown): value is PerspectiveCamera {
+	return Boolean(value) && (value as PerspectiveCamera).type === "PerspectiveCamera";
 }
