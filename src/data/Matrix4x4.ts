@@ -506,6 +506,40 @@ export class Matrix4x4 {
 		this.tw = tw;
 		return this;
 	}
+
+	inverseTransposeAffine(): Matrix4x4 {
+		const ix = this.ix;
+		const iy = this.iy;
+		const iz = this.iz;
+		const jx = this.jx;
+		const jy = this.jy;
+		const jz = this.jz;
+		const kx = this.kx;
+		const ky = this.ky;
+		const kz = this.kz;
+		const tx = this.tx;
+		const ty = this.ty;
+		const tz = this.tz;
+
+		const det = ix * jy * kz + iy * jz * kx + iz * jx * ky
+			- ix * jz * ky - iy * jx * kz - iz * jy * kx;
+		const invDet = 1 / det;
+
+		this.ix = invDet * (jy * kz - jz * ky);
+		this.iy = invDet * (jz * kx - jx * kz);
+		this.iz = invDet * (jx * ky - jy * kx);
+		this.jx = invDet * (iz * ky - iy * kz);
+		this.jy = invDet * (ix * kz - iz * kx);
+		this.jz = invDet * (iy * kx - ix * ky);
+		this.kx = invDet * (iy * jz - iz * jy);
+		this.ky = invDet * (iz * jx - ix * jz);
+		this.kz = invDet * (ix * jy - iy * jx);
+		this.tx = -(this.ix * tx + this.iy * ty + this.iz * tz);
+		this.ty = -(this.jx * tx + this.jy * ty + this.jz * tz);
+		this.tz = -(this.kx * tx + this.ky * ty + this.kz * tz);
+
+		return this;
+	}
 }
 
 Object.defineProperty(Matrix4x4.prototype, "type", { value: "Matrix4x4" });

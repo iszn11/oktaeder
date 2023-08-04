@@ -9,9 +9,16 @@ export * from "./shader";
 
 import { _BinaryWriter as BinaryWriter } from "./_BinaryWriter";
 import { _Mapping as Mapping } from "./_Mapping";
-import { Camera, Material, Node, Scene, preOrder } from "./data";
+import { Camera, Material, Matrix4x4, Node, Scene, preOrder } from "./data";
 import { IndexBuffer, IndexBufferProps, Texture2D, Texture2DProps, VertexBuffer, VertexBufferProps } from "./resources";
 import { ShaderFlagKey, ShaderFlags, createPipeline, shaderFlagsKey } from "./shader";
+
+const _normalMatrix = new Matrix4x4(
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+);
 
 export class Renderer {
 
@@ -391,9 +398,17 @@ export class Renderer {
 			const offset = this._uniformWriter._length;
 			object._updateWorldMatrix();
 			this._uniformWriter.writeMatrix4x4(object._worldMatrix);
-
+			this._uniformWriter.writeMatrix4x4(_normalMatrix.setObject(object._worldMatrix).inverseTransposeAffine());
 			return offset;
 		});
+
+		// directional lights gather
+
+		// TODO
+
+		// point lights gather
+
+		// TODO
 
 		void materialBindGroups;
 		void objectOffsets;
