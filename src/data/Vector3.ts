@@ -91,6 +91,14 @@ export class Vector3 {
 		this.z = z;
 		return this;
 	}
+
+	normalize(): Vector3 {
+		const l = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+		this.x /= l;
+		this.y /= l;
+		this.z /= l;
+		return this;
+	}
 }
 
 Object.defineProperty(Vector3.prototype, "type", { value: "Vector3" });

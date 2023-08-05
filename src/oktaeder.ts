@@ -9,16 +9,33 @@ export * from "./shader";
 
 import { _BinaryWriter as BinaryWriter } from "./_BinaryWriter";
 import { _Mapping as Mapping } from "./_Mapping";
-import { Camera, Material, Matrix4x4, Node, Scene, preOrder } from "./data";
+import { Camera, Material, Matrix4x4, Node, Scene, Vector3, isDirectionalLight, isPointLight, preOrder } from "./data";
 import { IndexBuffer, IndexBufferProps, Texture2D, Texture2DProps, VertexBuffer, VertexBufferProps } from "./resources";
 import { ShaderFlagKey, ShaderFlags, createPipeline, shaderFlagsKey } from "./shader";
 
-const _normalMatrix = new Matrix4x4(
+const _matrixOStoWSNormal = new Matrix4x4(
 	NaN, NaN, NaN, NaN,
 	NaN, NaN, NaN, NaN,
 	NaN, NaN, NaN, NaN,
 	NaN, NaN, NaN, NaN,
 );
+
+const _matrixWStoVS = new Matrix4x4(
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+);
+
+const _matrixVStoCS = new Matrix4x4(
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+	NaN, NaN, NaN, NaN,
+);
+
+const _directionWS = new Vector3(NaN, NaN, NaN);
+const _positionWS = new Vector3(NaN, NaN, NaN);
 
 export class Renderer {
 
@@ -45,11 +62,14 @@ export class Renderer {
 
 	_uniformWriter: BinaryWriter;
 	_uniformBuffer: GPUBuffer;
-	_directionalLightBuffer: GPUBuffer;
+
+	_lightWriter: BinaryWriter;
 	_pointLightBuffer: GPUBuffer;
+	_directionalLightBuffer: GPUBuffer;
 
 	_sampler: GPUSampler;
 
+	_globalBindGroup: GPUBindGroup;
 	_objectBindGroup: GPUBindGroup;
 
 	/**
@@ -113,7 +133,6 @@ export class Renderer {
 					binding: 1,
 					visibility: GPUShaderStage.FRAGMENT,
 					buffer: {
-						hasDynamicOffset: true,
 						type: "read-only-storage",
 					},
 				},
@@ -121,7 +140,6 @@ export class Renderer {
 					binding: 2,
 					visibility: GPUShaderStage.FRAGMENT,
 					buffer: {
-						hasDynamicOffset: true,
 						type: "read-only-storage",
 					},
 				},
@@ -224,11 +242,13 @@ export class Renderer {
 			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 			label: "Uniform",
 		});
-		this._directionalLightBuffer = device.createBuffer({
+
+		this._lightWriter = new BinaryWriter();
+		this._pointLightBuffer = device.createBuffer({
 			size: 1024 * 32,
 			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
 		});
-		this._pointLightBuffer = device.createBuffer({
+		this._directionalLightBuffer = device.createBuffer({
 			size: 1024 * 32,
 			usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
 		});
@@ -243,6 +263,15 @@ export class Renderer {
 			maxAnisotropy: 16,
 		});
 
+		this._globalBindGroup = device.createBindGroup({
+			layout: this._globalBindGroupLayout,
+			entries: [
+				{ binding: 0, resource: { buffer: this._uniformBuffer } },
+				{ binding: 1, resource: { buffer: this._pointLightBuffer } },
+				{ binding: 2, resource: { buffer: this._directionalLightBuffer } },
+			],
+			label: "Global",
+		});
 		this._objectBindGroup = device.createBindGroup({
 			layout: this._objectBindGroupLayout,
 			entries: [
@@ -320,6 +349,11 @@ export class Renderer {
 	}
 
 	render(scene: Scene, camera: Camera): Renderer {
+		const cameraNode = camera._node;
+		if (cameraNode === null) {
+			throw new Error(`Cannot render with a detached camera. Camera [${camera._name}] is not attached to a node.`);
+		}
+
 		const { width, height } = this._context.getCurrentTexture();
 		if (this._depthBuffer.width !== width || this._depthBuffer.height !== height) {
 			this._depthBuffer.resizeDiscard({
@@ -346,7 +380,7 @@ export class Renderer {
 
 		this._uniformWriter.clear();
 
-		// material gather
+		// gather materials
 
 		const materialMapping = new Mapping<Material>();
 		for (const node of preOrder(scene._nodes)) {
@@ -385,7 +419,7 @@ export class Renderer {
 			return { offset, bindGroup };
 		});
 
-		// object gather
+		// gather objects
 
 		const objectMapping = new Mapping<Node>();
 		for (const node of preOrder(scene._nodes)) {
@@ -398,20 +432,112 @@ export class Renderer {
 			const offset = this._uniformWriter._length;
 			object._updateWorldMatrix();
 			this._uniformWriter.writeMatrix4x4(object._worldMatrix);
-			this._uniformWriter.writeMatrix4x4(_normalMatrix.setObject(object._worldMatrix).inverseTransposeAffine());
+			this._uniformWriter.writeMatrix4x4(_matrixOStoWSNormal.setObject(object._worldMatrix).inverseTransposeAffine());
 			return offset;
 		});
 
-		// directional lights gather
+		// gather point lights
 
-		// TODO
+		this._lightWriter.clear();
+		let pointLightCount = 0;
+		for (const node of preOrder(scene._nodes)) {
+			const light = node._light;
+			if (!isPointLight(light)) continue;
 
-		// point lights gather
+			node._updateWorldMatrix();
+			_positionWS.set(node._worldMatrix.tx, node._worldMatrix.ty, node._worldMatrix.tz);
 
-		// TODO
+			this._lightWriter.writeVector3(_positionWS);
+			this._lightWriter.writeU32(0);
+			this._lightWriter.writeColorF32(light._color);
+			this._lightWriter.writeU32(0);
 
-		void materialBindGroups;
-		void objectOffsets;
+			pointLightCount += 1;
+		}
+
+		this._device.queue.writeBuffer(this._pointLightBuffer, 0, this._lightWriter.subarray);
+
+		// gather directional lights
+
+		this._lightWriter.clear();
+		let directionalLightCount = 0;
+		for (const node of preOrder(scene._nodes)) {
+			const light = node._light;
+			if (!isDirectionalLight(light)) continue;
+
+			node._updateWorldMatrix();
+			_directionWS.set(-node._worldMatrix.kx, -node._worldMatrix.ky, -node._worldMatrix.kz);
+			_directionWS.normalize();
+
+			this._lightWriter.writeVector3(_directionWS);
+			this._lightWriter.writeU32(0);
+			this._lightWriter.writeColorF32(light._color);
+			this._lightWriter.writeU32(0);
+
+			directionalLightCount += 1;
+		}
+
+		this._device.queue.writeBuffer(this._directionalLightBuffer, 0, this._lightWriter.subarray);
+
+		// global uniforms
+
+		const globalUniformsOffset = this._uniformWriter._length;
+		cameraNode._updateWorldMatrix();
+		_matrixWStoVS.setObject(cameraNode._worldMatrix).inverseAffine();
+		camera.computeProjectionMatrix(width / height, _matrixVStoCS);
+
+		this._uniformWriter.writeMatrix4x4(_matrixWStoVS);
+		this._uniformWriter.writeMatrix4x4(_matrixVStoCS);
+		this._uniformWriter.writeColorF32(scene._ambientLight);
+		this._uniformWriter.writeU32(pointLightCount);
+		this._uniformWriter.writeU32(directionalLightCount);
+		this._uniformWriter.writeU32(0);
+		this._uniformWriter.writeU32(0);
+		this._uniformWriter.writeU32(0);
+
+		// upload uniforms
+
+		this._device.queue.writeBuffer(this._uniformBuffer, 0, this._uniformWriter.subarray);
+
+		// render
+
+		pass.setBindGroup(0, this._globalBindGroup, [globalUniformsOffset]);
+
+		for (let oi = 0; oi < objectMapping.table.length; ++oi) {
+			const object = objectMapping.table[oi]!;
+			const objectOffset = objectOffsets[oi]!;
+			const mesh = object.mesh!;
+			const { _vertexBuffer: vertexBuffer, _indexBuffer: indexBuffer } = mesh;
+
+			const flags: ShaderFlags = {
+				texCoord: vertexBuffer._texCoordBuffer !== null,
+				lightTexCoord: vertexBuffer._lightTexCoordBuffer !== null,
+				normal: vertexBuffer._normalBuffer !== null,
+				tangent: vertexBuffer._tangentBuffer !== null,
+			};
+
+			const renderPipeline = this._getOrCreatePipeline(flags);
+
+			pass.setPipeline(renderPipeline);
+
+			pass.setVertexBuffer(0, vertexBuffer._positionBuffer);
+			pass.setVertexBuffer(1, vertexBuffer._texCoordBuffer);
+			pass.setVertexBuffer(2, vertexBuffer._lightTexCoordBuffer);
+			pass.setVertexBuffer(3, vertexBuffer._normalBuffer);
+			pass.setVertexBuffer(4, vertexBuffer._tangentBuffer);
+			pass.setIndexBuffer(indexBuffer._buffer, indexBuffer._indexFormat);
+
+			pass.setBindGroup(2, this._objectBindGroup, [objectOffset]);
+
+			for (let si = 0; si < mesh._submeshes.length; ++si) {
+				const submesh = mesh._submeshes[si]!;
+				const material = object._materials[si]!;
+				const { bindGroup: materialBindGroup, offset: materialOffset } = materialBindGroups[materialMapping.get(material)!]!;
+
+				pass.setBindGroup(1, materialBindGroup, [materialOffset]);
+				pass.drawIndexed(submesh.length, 1, submesh.start, 0, 0);
+			}
+		}
 
 		pass.end();
 

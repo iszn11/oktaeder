@@ -136,16 +136,15 @@ export function createShaderCode({
 	normal,
 	tangent,
 }: ShaderFlags): string {
-	let vertexLocation = 0;
 	let varyingLocation = 0;
 
 	return `
 struct Vertex {
-	@location(${vertexLocation++}) positionOS: vec3<f32>,
-	${texCoord ? `@location(${vertexLocation++}) texCoord: vec2<f32>,` : ""}
-	${lightTexCoord ? `@location(${vertexLocation++}) lightTexCoord: vec2<f32>,` : ""}
-	${normal ? `@location(${vertexLocation++}) normalOS: vec3<f32>,` : ""}
-	${normal && tangent ? `@location(${vertexLocation++}) tangentOS: vec4<f32>,` : ""}
+	@location(0) positionOS: vec3<f32>,
+	${texCoord ? `@location(1) texCoord: vec2<f32>,` : ""}
+	${lightTexCoord ? `@location(2) lightTexCoord: vec2<f32>,` : ""}
+	${normal ? `@location(3) normalOS: vec3<f32>,` : ""}
+	${normal && tangent ? `@location(4) tangentOS: vec4<f32>,` : ""}
 }
 
 struct Varyings {

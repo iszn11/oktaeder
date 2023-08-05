@@ -155,6 +155,31 @@ export class Matrix4x4 {
 		);
 	}
 
+	set(
+		ix: number, iy: number, iz: number, iw: number,
+		jx: number, jy: number, jz: number, jw: number,
+		kx: number, ky: number, kz: number, kw: number,
+		tx: number, ty: number, tz: number, tw: number,
+	): Matrix4x4 {
+		this.ix = ix;
+		this.iy = iy;
+		this.iz = iz;
+		this.iw = iw;
+		this.jx = jx;
+		this.jy = jy;
+		this.jz = jz;
+		this.jw = jw;
+		this.kx = kx;
+		this.ky = ky;
+		this.kz = kz;
+		this.kw = kw;
+		this.tx = tx;
+		this.ty = ty;
+		this.tz = tz;
+		this.tw = tw;
+		return this;
+	}
+
 	setObject(object: Matrix4x4Object): Matrix4x4 {
 		this.ix = object.ix;
 		this.iy = object.iy;
@@ -504,6 +529,40 @@ export class Matrix4x4 {
 		this.ty = ty;
 		this.tz = tz;
 		this.tw = tw;
+		return this;
+	}
+
+	inverseAffine(): Matrix4x4 {
+		const ix = this.ix;
+		const iy = this.iy;
+		const iz = this.iz;
+		const jx = this.jx;
+		const jy = this.jy;
+		const jz = this.jz;
+		const kx = this.kx;
+		const ky = this.ky;
+		const kz = this.kz;
+		const tx = this.tx;
+		const ty = this.ty;
+		const tz = this.tz;
+
+		const det = ix * jy * kz + iy * jz * kx + iz * jx * ky
+			- ix * jz * ky - iy * jx * kz - iz * jy * kx;
+		const invDet = 1 / det;
+
+		this.ix = invDet * (jy * kz - jz * ky);
+		this.iy = invDet * (iz * ky - iy * kz);
+		this.iz = invDet * (iy * jz - iz * jy);
+		this.jx = invDet * (jz * kx - jx * kz);
+		this.jy = invDet * (ix * kz - iz * kx);
+		this.jz = invDet * (iz * jx - ix * jz);
+		this.kx = invDet * (jx * ky - jy * kx);
+		this.ky = invDet * (iy * kx - ix * ky);
+		this.kz = invDet * (ix * jy - iy * jx);
+		this.tx = -(this.ix * tx + this.jx * ty + this.kx * tz);
+		this.ty = -(this.iy * tx + this.jy * ty + this.ky * tz);
+		this.tz = -(this.iz * tx + this.jz * ty + this.kz * tz);
+
 		return this;
 	}
 

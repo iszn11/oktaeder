@@ -104,6 +104,15 @@ export class Vector4 {
 		this.w = w;
 		return this;
 	}
+
+	normalize(): Vector4 {
+		const l = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
+		this.x /= l;
+		this.y /= l;
+		this.z /= l;
+		this.w /= l;
+		return this;
+	}
 }
 
 Object.defineProperty(Vector4.prototype, "type", { value: "Vector4" });

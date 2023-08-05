@@ -4,12 +4,14 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Node } from ".";
+import { Color, ColorObject, Node } from ".";
 
 export interface SceneProps {
 	readonly name?: string;
 
 	readonly nodes?: Node[];
+
+	readonly ambientLight?: ColorObject;
 }
 
 export class Scene {
@@ -20,17 +22,31 @@ export class Scene {
 
 	_nodes: Node[];
 
+	_ambientLight: Color;
+
 	constructor({
 		name = "",
 		nodes = [],
+		ambientLight,
 	}: SceneProps) {
 		this._name = name;
 
 		this._nodes = nodes;
+
+		this._ambientLight = ambientLight !== undefined ? Color.fromObject(ambientLight) : Color.black();
 	}
 
 	set name(value: string) { this._name = value; }
 	get name(): string { return this._name; }
+
+	setAmbientLight(value: ColorObject): Scene {
+		this._ambientLight.setObject(value);
+		return this;
+	}
+
+	getAmbientLight(res: Color): Color {
+		return res.setObject(this._ambientLight);
+	}
 }
 
 Object.defineProperty(Scene.prototype, "type", { value: "Scene" });

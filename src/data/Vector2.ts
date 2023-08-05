@@ -78,6 +78,13 @@ export class Vector2 {
 		this.y = y;
 		return this;
 	}
+
+	normalize(): Vector2 {
+		const l = Math.sqrt(this.x * this.x + this.y * this.y);
+		this.x /= l;
+		this.y /= l;
+		return this;
+	}
 }
 
 Object.defineProperty(Vector2.prototype, "type", { value: "Vector2" });

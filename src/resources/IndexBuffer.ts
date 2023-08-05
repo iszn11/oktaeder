@@ -116,6 +116,9 @@ export class IndexBuffer {
 			indexCount,
 		});
 	}
+
+	get indexFormat(): "uint16" | "uint32" { return this._indexFormat; }
+	get indexSize(): number { return indexSize(this._indexFormat); }
 }
 
 Object.defineProperty(IndexBuffer.prototype, "type", { value: "IndexBuffer" });

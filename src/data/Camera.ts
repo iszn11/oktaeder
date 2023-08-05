@@ -4,7 +4,7 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Node } from ".";
+import { Matrix4x4, Node } from ".";
 
 export type Camera = OrthographicCamera | PerspectiveCamera;
 
@@ -30,7 +30,7 @@ export class OrthographicCamera {
 
 	_name: string;
 
-	_verticalSize: number;
+	_halfVerticalSize: number;
 	_nearPlane: number;
 	_farPlane: number;
 
@@ -45,7 +45,7 @@ export class OrthographicCamera {
 	}: OrthographicCameraProps) {
 		this._name = name;
 
-		this._verticalSize = verticalSize;
+		this._halfVerticalSize = verticalSize;
 		this._nearPlane = nearPlane;
 		this._farPlane = farPlane;
 
@@ -55,8 +55,8 @@ export class OrthographicCamera {
 	set name(value: string) { this._name = value; }
 	get name(): string { return this._name; }
 
-	set verticalSize(value: number) { this._verticalSize = value; }
-	get verticalSize(): number { return this._verticalSize; }
+	set halfVerticalSize(value: number) { this._halfVerticalSize = value; }
+	get halfVerticalSize(): number { return this._halfVerticalSize; }
 
 	set nearPlane(value: number) { this._nearPlane = value; }
 	get nearPlane(): number { return this._nearPlane; }
@@ -86,6 +86,16 @@ export class OrthographicCamera {
 		this._node._camera = null;
 		this._node = null;
 		return this;
+	}
+
+	computeProjectionMatrix(aspectRatio: number, res: Matrix4x4): Matrix4x4 {
+		const halfHorizontalSize = this._halfVerticalSize / aspectRatio;
+		return res.set(
+			1 / halfHorizontalSize, 0, 0, 0,
+			0, 1 / this._halfVerticalSize, 0, 0,
+			0, 0, 1 / (this._nearPlane - this._farPlane), 0,
+			0, 0, this._farPlane / (this._farPlane - this._nearPlane), 1,
+		);
 	}
 }
 
@@ -148,6 +158,25 @@ export class PerspectiveCamera {
 		this._node._camera = null;
 		this._node = null;
 		return this;
+	}
+
+	computeProjectionMatrix(aspectRatio: number, res: Matrix4x4): Matrix4x4 {
+		const halfVerticalCotangent = 1 / Math.tan(0.5 * this._verticalFovRad);
+		if (this._farPlane === Infinity) {
+			return res.set(
+				halfVerticalCotangent / aspectRatio, 0, 0, 0,
+				0, halfVerticalCotangent, 0, 0,
+				0, 0, 0, 1,
+				0, 0, this._nearPlane, 0,
+			);
+		} else {
+			return res.set(
+				halfVerticalCotangent / aspectRatio, 0, 0, 0,
+				0, halfVerticalCotangent, 0, 0,
+				0, 0, this._nearPlane / (this._nearPlane - this._farPlane), 1,
+				0, 0, this._nearPlane * this._farPlane / (this._farPlane - this._nearPlane), 0,
+			);
+		}
 	}
 }
 
