@@ -45,6 +45,27 @@ export class Mesh {
 	get submeshCount(): number {
 		return this._submeshes.length;
 	}
+
+	set name(value: string) { this._name = value; }
+	get name(): string { return this._name; }
+
+	set vertexBuffer(value: VertexBuffer) { this._vertexBuffer = value; }
+	get vertexBuffer(): VertexBuffer { return this._vertexBuffer; }
+
+	set indexBuffer(value: IndexBuffer) { this._indexBuffer = value; }
+	get indexBuffer(): IndexBuffer { return this._indexBuffer; }
+
+	setSubmeshes(value: readonly Submesh[]): Mesh {
+		this._submeshes.length = 0;
+		this._submeshes.push(...value);
+		return this;
+	}
+
+	getMaterials(res: Submesh[]): Submesh[] {
+		res.length = 0;
+		res.push(...this._submeshes);
+		return res;
+	}
 }
 
 Object.defineProperty(Mesh.prototype, "type", { value: "Mesh" });

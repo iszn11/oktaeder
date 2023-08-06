@@ -5,6 +5,5 @@
  */
 
 export * from "./IndexBuffer";
-export * from "./Material";
 export * from "./Texture2D";
 export * from "./VertexBuffer";
