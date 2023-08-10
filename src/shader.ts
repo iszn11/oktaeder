@@ -136,8 +136,6 @@ export function createShaderCode({
 	normal,
 	tangent,
 }: ShaderFlags): string {
-	let varyingLocation = 0;
-
 	return `
 struct Vertex {
 	@location(0) positionOS: vec3<f32>,
@@ -149,12 +147,12 @@ struct Vertex {
 
 struct Varyings {
 	@builtin(position) positionCS: vec4<f32>,
-	@location(${varyingLocation++}) positionVS: vec4<f32>,
-	${texCoord ? `@location(${varyingLocation++}) texCoord: vec2<f32>,` : ""}
-	${lightTexCoord ? `@location(${varyingLocation++}) lightTexCoord: vec2<f32>,` : ""}
-	${normal ? `@location(${varyingLocation++}) normalVS: vec3<f32>,` : ""}
-	${normal && tangent ? `@location(${varyingLocation++}) tangentVS: vec3<f32>,` : ""}
-	${normal && tangent ? `@location(${varyingLocation++}) bitangentVS: vec3<f32>,` : ""}
+	@location(0) positionVS: vec4<f32>,
+	${texCoord ? `@location(1) texCoord: vec2<f32>,` : ""}
+	${lightTexCoord ? `@location(2) lightTexCoord: vec2<f32>,` : ""}
+	${normal ? `@location(3) normalVS: vec3<f32>,` : ""}
+	${normal && tangent ? `@location(4) tangentVS: vec3<f32>,` : ""}
+	${normal && tangent ? `@location(5) bitangentVS: vec3<f32>,` : ""}
 }
 
 struct PointLight {
@@ -207,6 +205,37 @@ struct ObjectUniforms {
 @group(1) @binding(5) var _NormalTexture: texture_2d<f32>;
 @group(1) @binding(6) var _EmissiveTexture: texture_2d<f32>;
 @group(1) @binding(7) var _TransmissionCollimationTexture: texture_2d<f32>;
+
+const INV_PI: f32 = 0.31830987;
+
+fn fresnelSchlick(dotVH: f32, f0: vec3<f32>) -> vec3<f32> {
+	const f90 = vec3(1.0);
+	return f0 + (f90 - f0) * pow(1.0 - dotVH, 5.0);
+}
+
+fn visibilityGGX(dotNL: f32, dotNV: f32, alpha: f32) -> f32 {
+	let alphaSquared = alpha * alpha;
+
+	let vGGX = dotNL * sqrt(dotNV * dotNV * (1.0 - alphaSquared) + alphaSquared);
+	let lGGX = dotNV * sqrt(dotNL * dotNL * (1.0 - alphaSquared) + alphaSquared);
+	let GGX = vGGX + lGGX;
+	return GGX > 0.0 ? 0.5 / GGX : 0.0;
+}
+
+fn distributionGGX(dotNH: f32, alpha: f32) -> f32 {
+	let alphaSquared = alpha * alpha;
+	let tmp = dotNH * dotNH * (alphaSquared - 1.0) + 1.0;
+	return alphaSquared * INV_PI / (tmp * tmp);
+}
+
+fn toneMapAcesNarkowicz(color: vec3<f32>) -> vec3<f32> {
+	const A: f32 = 2.51;
+	const B: f32 = 0.03;
+	const C: f32 = 2.43;
+	const D: f32 = 0.59;
+	const E: f32 = 0.14;
+	return saturate((color * (A * color + B)) / (color * (C * color + D) + E));
+}
 
 fn screenSpaceMatrixTStoVS(positionVS: vec3<f32>, normalVS: vec3<f32>, texCoord: vec2<f32>) -> mat3x3<f32> {
 	let q0 = dpdx(positionVS);
@@ -298,5 +327,67 @@ fn frag(fragment: Varyings) -> @location(0) vec2<f32> {
 	` : `
 		let actualNormalVS = geometricNormalVS;
 	`}
+
+	let viewDirectionVS = normalize(-positionVS);
+	let dotNV = saturate(dot(actualNormalVS, viewDirectionVS));
+	let alpha = roughness * roughness;
+
+	var f0 = vec3(pow((ior - 1.0) / (ior + 1.0), 2.0));
+	f0 = mix(f0, baseColor, metallic);
+
+	var outgoingRadiance = vec3(0.0);
+
+	for (var i: u32 = 0; i < _Global.pointLightCount; ++i) {
+		let light = _PointLights[i];
+
+		let lightPositionVS = (_Global.matrixWStoVS * vec4(light.positionWS, 1.0)).xyz;
+		let lightDirectionVS = normalize(lightPositionVS - positionVS);
+		let lightDistance = distance(positionVS, lightPositionVS);
+		let lightAttenuation = 1.0 / (lightDistance * lightDistance);
+		let halfVectorVS = normalize(lightDirectionVS + viewDirectionVS);
+
+		let dotVH = saturate(dot(viewDirectionVS, halfVectorVS));
+		let dotNH = saturate(dot(actualNormalVS, halfVectorVS));
+		let dotNL = saturate(dot(actualNormalVS, lightDirectionVS));
+
+		let incomingRadiance = light.color * attenuation;
+
+		let fresnel = fresnelSchlick(dotVH, f0);
+		let visibility = visibilityGGX(dotNL, dotNV, alpha);
+		let distribution = distributionGGX(dotNH, alpha);
+
+		let scatteredFactor = (1.0 - fresnel) * (1.0 - metallic) * baseColor * INV_PI;
+		let reflectedFactor = fresnel * visibility * distribution;
+
+		outgoingRadiance += (scatteredFactor + reflectedFactor) * incomingRadiance * dotNL;
+	}
+
+	for (var i: u32 = 0; i < _Global.directionalLightCount; ++i) {
+		let light = _DirectionalLights[i];
+
+		let lightDirectionVS = normalize((_Global.matrixWStoVS * vec4(light.directionWS, 0.0)).xyz);
+		let halfVectorVS = normalize(lightDirectionVS + viewDirectionVS);
+
+		let dotVH = saturate(dot(viewDirectionVS, halfVectorVS));
+		let dotNH = saturate(dot(actualNormalVS, halfVectorVS));
+
+		let incomingRadiance = light.color;
+
+		let fresnel = fresnelSchlick(dotVH, f0);
+		let visibility = visibilityGGX(dotNL, dotNV, alpha);
+		let distribution = distributionGGX(dotNH, alpha);
+
+		let scatteredFactor = (1.0 - fresnel) * (1.0 - metallic) * baseColor * INV_PI;
+		let reflectedFactor = fresnel * visibility * distribution;
+
+		outgoingRadiance += (scatteredFactor + reflectedFactor) * incomingRadiance * dotNL;
+	}
+
+	outgoingRadiance += _Global.ambientLight * baseColor * occlusion;
+
+	let toneMappedLinearColor = toneMapAcesNarkowicz(outgoingRadiance);
+	let toneMappedSrgbColor = pow(toneMappedLinearColor, vec3(1.0 / 2.2));
+
+	return vec4(toneMappedSrgbColor, 1.0);
 }`;
 }
