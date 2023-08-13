@@ -237,6 +237,26 @@ fn toneMapAcesNarkowicz(color: vec3<f32>) -> vec3<f32> {
 	return saturate((color * (A * color + B)) / (color * (C * color + D) + E));
 }
 
+fn lightOutgoingRadiance(
+	viewDirectionVS: vec3<f32>, actualNormalVS: vec3<f32>, dotNV: f32,
+	baseColor: vec3<f32>, alpha: f32, metallic: f32, f0: vec3<f32>,
+	incomingRadiance: vec3<f32>, lightDirectionVS: vec3<f32>,
+) -> vec3<f32> {
+	let halfVectorVS = normalize(lightDirectionVS + viewDirectionVS);
+	let dotVH = saturate(dot(viewDirectionVS, halfVectorVS));
+	let dotNH = saturate(dot(actualNormalVS, halfVectorVS));
+	let dotNL = saturate(dot(actualNormalVS, lightDirectionVS));
+
+	let fresnel = fresnelSchlick(dotVH, f0);
+	let visibility = visibilityGGX(dotNL, dotNV, alpha);
+	let distribution = distributionGGX(dotNH, alpha);
+
+	let scatteredFactor = (1.0 - fresnel) * (1.0 - metallic) * baseColor * INV_PI;
+	let reflectedFactor = fresnel * visibility * distribution;
+
+	return (scatteredFactor + reflectedFactor) * incomingRadiance * dotNL;
+}
+
 fn screenSpaceMatrixTStoVS(positionVS: vec3<f32>, normalVS: vec3<f32>, texCoord: vec2<f32>) -> mat3x3<f32> {
 	let q0 = dpdx(positionVS);
 	let q1 = dpdy(positionVS);
@@ -344,43 +364,26 @@ fn frag(fragment: Varyings) -> @location(0) vec2<f32> {
 		let lightDirectionVS = normalize(lightPositionVS - positionVS);
 		let lightDistance = distance(positionVS, lightPositionVS);
 		let lightAttenuation = 1.0 / (lightDistance * lightDistance);
-		let halfVectorVS = normalize(lightDirectionVS + viewDirectionVS);
+		let incomingRadiance = light.color * lightAttenuation;
 
-		let dotVH = saturate(dot(viewDirectionVS, halfVectorVS));
-		let dotNH = saturate(dot(actualNormalVS, halfVectorVS));
-		let dotNL = saturate(dot(actualNormalVS, lightDirectionVS));
-
-		let incomingRadiance = light.color * attenuation;
-
-		let fresnel = fresnelSchlick(dotVH, f0);
-		let visibility = visibilityGGX(dotNL, dotNV, alpha);
-		let distribution = distributionGGX(dotNH, alpha);
-
-		let scatteredFactor = (1.0 - fresnel) * (1.0 - metallic) * baseColor * INV_PI;
-		let reflectedFactor = fresnel * visibility * distribution;
-
-		outgoingRadiance += (scatteredFactor + reflectedFactor) * incomingRadiance * dotNL;
+		outgoingRadiance += lightOutgoingRadiance(
+			viewDirectionVS, actualNormalVS, dotNV,
+			baseColor, alpha, metallic, f0,
+			incomingRadiance, lightDirectionVS,
+		);
 	}
 
 	for (var i: u32 = 0; i < _Global.directionalLightCount; ++i) {
 		let light = _DirectionalLights[i];
 
 		let lightDirectionVS = normalize((_Global.matrixWStoVS * vec4(light.directionWS, 0.0)).xyz);
-		let halfVectorVS = normalize(lightDirectionVS + viewDirectionVS);
-
-		let dotVH = saturate(dot(viewDirectionVS, halfVectorVS));
-		let dotNH = saturate(dot(actualNormalVS, halfVectorVS));
-
 		let incomingRadiance = light.color;
 
-		let fresnel = fresnelSchlick(dotVH, f0);
-		let visibility = visibilityGGX(dotNL, dotNV, alpha);
-		let distribution = distributionGGX(dotNH, alpha);
-
-		let scatteredFactor = (1.0 - fresnel) * (1.0 - metallic) * baseColor * INV_PI;
-		let reflectedFactor = fresnel * visibility * distribution;
-
-		outgoingRadiance += (scatteredFactor + reflectedFactor) * incomingRadiance * dotNL;
+		outgoingRadiance += lightOutgoingRadiance(
+			viewDirectionVS, actualNormalVS, dotNV,
+			baseColor, alpha, metallic, f0,
+			incomingRadiance, lightDirectionVS,
+		);
 	}
 
 	outgoingRadiance += _Global.ambientLight * baseColor * occlusion;
