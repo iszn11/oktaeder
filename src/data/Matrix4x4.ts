@@ -34,7 +34,7 @@ export type Matrix4x4Tuple = readonly [
 
 export class Matrix4x4 {
 
-	readonly type!: "Matrix4x4";
+	declare readonly type: "Matrix4x4";
 
 	ix: number;
 	iy: number;

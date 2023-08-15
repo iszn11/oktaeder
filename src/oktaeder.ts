@@ -11,7 +11,7 @@ import { _BinaryWriter as BinaryWriter } from "./_BinaryWriter";
 import { _Mapping as Mapping } from "./_Mapping";
 import { Camera, Material, Matrix4x4, Node, Scene, Vector3, isDirectionalLight, isPointLight, preOrder } from "./data";
 import { IndexBuffer, IndexBufferProps, Texture2D, Texture2DProps, VertexBuffer, VertexBufferProps } from "./resources";
-import { ShaderFlagKey, ShaderFlags, createPipeline, shaderFlagsKey } from "./shader";
+import { GLOBAL_UNIFORMS_SIZE, MATERIAL_UNIFORMS_SIZE, OBJECT_UNIFORMS_SIZE, ShaderFlagKey, ShaderFlags, _createPipeline, _shaderFlagsKey } from "./shader";
 
 const _matrixOStoWSNormal = new Matrix4x4(
 	NaN, NaN, NaN, NaN,
@@ -117,6 +117,7 @@ export class Renderer {
 			width: framebufferTexture.width,
 			height: framebufferTexture.height,
 			format: "depth",
+			usage: GPUTextureUsage.RENDER_ATTACHMENT,
 		});
 
 		this._globalBindGroupLayout = device.createBindGroupLayout({
@@ -266,7 +267,7 @@ export class Renderer {
 		this._globalBindGroup = device.createBindGroup({
 			layout: this._globalBindGroupLayout,
 			entries: [
-				{ binding: 0, resource: { buffer: this._uniformBuffer } },
+				{ binding: 0, resource: { buffer: this._uniformBuffer, size: GLOBAL_UNIFORMS_SIZE } },
 				{ binding: 1, resource: { buffer: this._pointLightBuffer } },
 				{ binding: 2, resource: { buffer: this._directionalLightBuffer } },
 			],
@@ -275,7 +276,7 @@ export class Renderer {
 		this._objectBindGroup = device.createBindGroup({
 			layout: this._objectBindGroupLayout,
 			entries: [
-				{ binding: 0, resource: { buffer: this._uniformBuffer } },
+				{ binding: 0, resource: { buffer: this._uniformBuffer, size: OBJECT_UNIFORMS_SIZE } },
 			],
 			label: "Object",
 		});
@@ -336,14 +337,14 @@ export class Renderer {
 	}
 
 	_getOrCreatePipeline(flags: ShaderFlags): GPURenderPipeline {
-		const key = shaderFlagsKey(flags);
+		const key = _shaderFlagsKey(flags);
 
 		let pipeline = this._pipelineCache.get(key);
 		if (pipeline !== undefined) {
 			return pipeline;
 		}
 
-		pipeline = createPipeline(this, flags);
+		pipeline = _createPipeline(this, flags);
 		this._pipelineCache.set(key, pipeline);
 		return pipeline;
 	}
@@ -401,11 +402,12 @@ export class Renderer {
 			this._uniformWriter.writeF32(material._normalScale);
 			this._uniformWriter.writeColorF32(material._emissive);
 			this._uniformWriter.writeF32(material._ior);
+			this._uniformWriter.padToAlign(256);
 
 			const bindGroup = this._device.createBindGroup({
 				layout: this._materialBindGroupLayout,
 				entries: [
-					{ binding: 0, resource: { buffer: this._uniformBuffer } },
+					{ binding: 0, resource: { buffer: this._uniformBuffer, size: MATERIAL_UNIFORMS_SIZE } },
 					{ binding: 1, resource: this._sampler },
 					{ binding: 2, resource: material._baseColorPartialCoverageTexture?._textureView ?? this._textureWhite._textureView },
 					{ binding: 3, resource: material._occlusionTexture?._textureView ?? this._textureWhite._textureView },
@@ -433,6 +435,7 @@ export class Renderer {
 			object._updateWorldMatrix();
 			this._uniformWriter.writeMatrix4x4(object._worldMatrix);
 			this._uniformWriter.writeMatrix4x4(_matrixOStoWSNormal.setObject(object._worldMatrix).inverseTransposeAffine());
+			this._uniformWriter.padToAlign(256);
 			return offset;
 		});
 
@@ -491,9 +494,7 @@ export class Renderer {
 		this._uniformWriter.writeColorF32(scene._ambientLight);
 		this._uniformWriter.writeU32(pointLightCount);
 		this._uniformWriter.writeU32(directionalLightCount);
-		this._uniformWriter.writeU32(0);
-		this._uniformWriter.writeU32(0);
-		this._uniformWriter.writeU32(0);
+		this._uniformWriter.padToAlign(256);
 
 		// upload uniforms
 
@@ -520,11 +521,18 @@ export class Renderer {
 
 			pass.setPipeline(renderPipeline);
 
+			/* WORKAROUND
+			 *
+			 * As of writing, Chrome doesn't support passing null as the second
+			 * argument. We could (and should) bind the buffers unconditionally
+			 * for increased safety. For now, we only do this when they are not
+			 * null.
+			 */
 			pass.setVertexBuffer(0, vertexBuffer._positionBuffer);
-			pass.setVertexBuffer(1, vertexBuffer._texCoordBuffer);
-			pass.setVertexBuffer(2, vertexBuffer._lightTexCoordBuffer);
-			pass.setVertexBuffer(3, vertexBuffer._normalBuffer);
-			pass.setVertexBuffer(4, vertexBuffer._tangentBuffer);
+			if (vertexBuffer._texCoordBuffer !== null) pass.setVertexBuffer(1, vertexBuffer._texCoordBuffer);
+			if (vertexBuffer._lightTexCoordBuffer !== null) pass.setVertexBuffer(2, vertexBuffer._lightTexCoordBuffer);
+			if (vertexBuffer._normalBuffer !== null) pass.setVertexBuffer(3, vertexBuffer._normalBuffer);
+			if (vertexBuffer._tangentBuffer !== null) pass.setVertexBuffer(4, vertexBuffer._tangentBuffer);
 			pass.setIndexBuffer(indexBuffer._buffer, indexBuffer._indexFormat);
 
 			pass.setBindGroup(2, this._objectBindGroup, [objectOffset]);

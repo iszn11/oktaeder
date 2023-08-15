@@ -14,7 +14,7 @@ export type Vector3Tuple = readonly [x: number, y: number, z: number];
 
 export class Vector3 {
 
-	readonly type!: "Vector3";
+	declare readonly type: "Vector3";
 
 	x: number;
 	y: number;

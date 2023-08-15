@@ -23,7 +23,7 @@ export interface NodeProps {
 
 export class Node {
 
-	readonly type!: "Node";
+	declare readonly type: "Node";
 
 	_name: string;
 

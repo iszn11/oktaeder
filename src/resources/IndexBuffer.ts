@@ -20,7 +20,7 @@ export interface IndexBufferResizeProps {
 
 export class IndexBuffer {
 
-	readonly type!: "IndexBuffer";
+	declare readonly type: "IndexBuffer";
 	_renderer: Renderer;
 
 	_name: string;

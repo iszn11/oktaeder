@@ -26,7 +26,7 @@ export interface PerspectiveCameraProps {
 
 export class OrthographicCamera {
 
-	readonly type!: "OrthographicCamera";
+	declare readonly type: "OrthographicCamera";
 
 	_name: string;
 
@@ -101,7 +101,7 @@ export class OrthographicCamera {
 
 export class PerspectiveCamera {
 
-	readonly type!: "PerspectiveCamera";
+	declare readonly type: "PerspectiveCamera";
 
 	_name: string;
 

@@ -22,7 +22,7 @@ export interface PointLightProps {
 
 export class DirectionalLight {
 
-	readonly type!: "DirectionalLight";
+	get type(): "DirectionalLight" {};
 
 	_name: string;
 
@@ -81,7 +81,7 @@ export class DirectionalLight {
 
 export class PointLight {
 
-	readonly type!: "PointLight";
+	declare readonly type: "PointLight";
 
 	_name: string;
 

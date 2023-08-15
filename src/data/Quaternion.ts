@@ -15,7 +15,7 @@ export type QuaternionTuple = readonly [x: number, y: number, z: number, w: numb
 
 export class Quaternion {
 
-	readonly type!: "Quaternion";
+	declare readonly type: "Quaternion";
 
 	x: number;
 	y: number;

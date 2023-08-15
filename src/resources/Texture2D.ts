@@ -21,12 +21,15 @@ export interface Texture2DProps {
 	readonly height: number;
 
 	readonly format: Texture2DFormat;
+
+	readonly usage?: GPUTextureUsageFlags;
 }
 
 export interface Texture2DResizeProps {
 	readonly width?: number;
 	readonly height?: number;
 	readonly format?: Texture2DFormat;
+	readonly usage?: GPUTextureUsageFlags;
 }
 
 export interface Texture2DAdvancedWriteProps {
@@ -39,7 +42,7 @@ export interface Texture2DAdvancedWriteProps {
 
 export class Texture2D {
 
-	readonly type!: "Texture2D";
+	declare readonly type: "Texture2D";
 	_renderer: Renderer;
 
 	_name: string;
@@ -53,6 +56,7 @@ export class Texture2D {
 		width,
 		height,
 		format,
+		usage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
 	}: Texture2DProps) {
 		this._renderer = renderer;
 
@@ -62,7 +66,7 @@ export class Texture2D {
 
 		this._renderer = renderer;
 		this._texture = renderer._device.createTexture({
-			usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+			usage,
 			size: { width, height },
 			format: gpuFormat,
 			label: name
@@ -147,13 +151,14 @@ export class Texture2D {
 		width = this._texture.width,
 		height = this._texture.height,
 		format = this._format,
+		usage = this._texture.usage,
 	}: Texture2DResizeProps): Texture2D {
 		this._texture.destroy();
 
 		const gpuFormat = gpuTextureFormat(format);
 
 		this._texture = this._renderer._device.createTexture({
-			usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+			usage,
 			size: { width, height },
 			format: gpuFormat,
 			label: this._name

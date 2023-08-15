@@ -53,18 +53,20 @@ export class _BinaryWriter {
 	}
 
 	ensureUnusedCapacity(desiredUnusedCapacity: number): _BinaryWriter {
-		return this.ensureCapacity(this._buffer.byteLength + desiredUnusedCapacity);
+		return this.ensureCapacity(this._length + desiredUnusedCapacity);
 	}
 
 	writeU32(value: number): _BinaryWriter {
 		this.ensureUnusedCapacity(4);
 		this._dataView.setUint32(this._length, value, true);
+		this._length += 4;
 		return this;
 	}
 
 	writeF32(value: number): _BinaryWriter {
 		this.ensureUnusedCapacity(4);
 		this._dataView.setFloat32(this._length, value, true);
+		this._length += 4;
 		return this;
 	}
 
@@ -113,6 +115,19 @@ export class _BinaryWriter {
 		this.writeF32(value.r);
 		this.writeF32(value.g);
 		this.writeF32(value.b);
+		return this;
+	}
+
+	padToAlign(alignment: number): _BinaryWriter {
+		const alignedLength = (this._length + alignment - 1) & ~(alignment - 1);
+		const padding = alignedLength - this._length;
+		if (padding === 0) {
+			return this;
+		}
+
+		this.ensureUnusedCapacity(padding);
+		this._typedArray.fill(0, this._length, alignedLength);
+		this._length = alignedLength;
 		return this;
 	}
 

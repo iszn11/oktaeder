@@ -6,6 +6,13 @@
 
 import { Renderer } from "./oktaeder";
 
+// 152 bytes padded to 256
+export const GLOBAL_UNIFORMS_SIZE = 256;
+// 64 bytes padded to 256
+export const MATERIAL_UNIFORMS_SIZE = 256;
+// 128 bytes padded to 256
+export const OBJECT_UNIFORMS_SIZE = 256;
+
 export type ShaderFlagKey = number;
 
 export interface ShaderFlags {
@@ -15,7 +22,7 @@ export interface ShaderFlags {
 	readonly tangent: boolean;
 }
 
-export function shaderFlagsKey({
+export function _shaderFlagsKey({
 	texCoord,
 	lightTexCoord,
 	normal,
@@ -29,13 +36,13 @@ export function shaderFlagsKey({
 	return key;
 }
 
-export function createPipeline(renderer: Renderer, {
+export function _createPipeline(renderer: Renderer, {
 	texCoord,
 	lightTexCoord,
 	normal,
 	tangent,
 }: ShaderFlags): GPURenderPipeline {
-	const shaderCode = createShaderCode({ texCoord, lightTexCoord, normal, tangent });
+	const shaderCode = _createShaderCode({ texCoord, lightTexCoord, normal, tangent });
 
 	const shaderModule = renderer._device.createShaderModule({
 		code: shaderCode,
@@ -130,7 +137,7 @@ export function createPipeline(renderer: Renderer, {
 	return pipeline;
 }
 
-export function createShaderCode({
+export function _createShaderCode({
 	texCoord,
 	lightTexCoord,
 	normal,
@@ -147,7 +154,7 @@ struct Vertex {
 
 struct Varyings {
 	@builtin(position) positionCS: vec4<f32>,
-	@location(0) positionVS: vec4<f32>,
+	@location(0) positionVS: vec3<f32>,
 	${texCoord ? `@location(1) texCoord: vec2<f32>,` : ""}
 	${lightTexCoord ? `@location(2) lightTexCoord: vec2<f32>,` : ""}
 	${normal ? `@location(3) normalVS: vec3<f32>,` : ""}
@@ -219,7 +226,7 @@ fn visibilityGGX(dotNL: f32, dotNV: f32, alpha: f32) -> f32 {
 	let vGGX = dotNL * sqrt(dotNV * dotNV * (1.0 - alphaSquared) + alphaSquared);
 	let lGGX = dotNV * sqrt(dotNL * dotNL * (1.0 - alphaSquared) + alphaSquared);
 	let GGX = vGGX + lGGX;
-	return GGX > 0.0 ? 0.5 / GGX : 0.0;
+	return select(0.0, 0.5 / GGX, GGX > 0.0);
 }
 
 fn distributionGGX(dotNH: f32, alpha: f32) -> f32 {
@@ -270,7 +277,7 @@ fn screenSpaceMatrixTStoVS(positionVS: vec3<f32>, normalVS: vec3<f32>, texCoord:
 	let bitangentVS = q1perp * uv0.y + q0perp * uv1.y;
 
 	let det = max(dot(tangentVS, tangentVS), dot(bitangentVS, bitangentVS));
-	let scale = (det == 0.0) ? 0.0 : inserseSqrt(det);
+	let scale = select(0.0, inverseSqrt(det), det != 0.0);
 
 	return mat3x3(tangentVS * scale, bitangentVS * scale, normalVS);
 }
@@ -297,10 +304,11 @@ fn vert(vertex: Vertex) -> Varyings {
 	` : ""}
 	${texCoord ? "output.texCoord = vertex.texCoord;" : ""}
 	${lightTexCoord ? "output.lightTexCoord = vertex.lightTexCoord;" : ""}
+	return output;
 }
 
 @fragment
-fn frag(fragment: Varyings) -> @location(0) vec2<f32> {
+fn frag(fragment: Varyings) -> @location(0) vec4<f32> {
 	var baseColor = _Material.baseColor;
 	var partialCoverage = _Material.partialCoverage;
 	var occlusion = 1.0;
@@ -357,7 +365,7 @@ fn frag(fragment: Varyings) -> @location(0) vec2<f32> {
 
 	var outgoingRadiance = vec3(0.0);
 
-	for (var i: u32 = 0; i < _Global.pointLightCount; ++i) {
+	for (var i: u32 = 0; i < _Global.pointLightCount; i++) {
 		let light = _PointLights[i];
 
 		let lightPositionVS = (_Global.matrixWStoVS * vec4(light.positionWS, 1.0)).xyz;
@@ -373,7 +381,7 @@ fn frag(fragment: Varyings) -> @location(0) vec2<f32> {
 		);
 	}
 
-	for (var i: u32 = 0; i < _Global.directionalLightCount; ++i) {
+	for (var i: u32 = 0; i < _Global.directionalLightCount; i++) {
 		let light = _DirectionalLights[i];
 
 		let lightDirectionVS = normalize((_Global.matrixWStoVS * vec4(light.directionWS, 0.0)).xyz);

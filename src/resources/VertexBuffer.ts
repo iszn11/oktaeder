@@ -51,7 +51,7 @@ export interface VertexBufferWriteTypedArrayProps {
 
 export class VertexBuffer {
 
-	readonly type!: "VertexBuffer";
+	declare readonly type: "VertexBuffer";
 	_renderer: Renderer;
 
 	_name: string;

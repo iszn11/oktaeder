@@ -16,7 +16,7 @@ export interface SceneProps {
 
 export class Scene {
 
-	readonly type!: "Scene";
+	declare readonly type: "Scene";
 
 	_name: string;
 

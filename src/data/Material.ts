@@ -34,7 +34,7 @@ export interface MaterialProps {
 
 export class Material {
 
-	readonly type!: "Material";
+	declare readonly type: "Material";
 
 	_name: string;
 

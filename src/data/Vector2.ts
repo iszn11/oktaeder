@@ -13,7 +13,7 @@ export type Vector2Tuple = readonly [x: number, y: number];
 
 export class Vector2 {
 
-	readonly type!: "Vector2";
+	declare readonly type: "Vector2";
 
 	x: number;
 	y: number;

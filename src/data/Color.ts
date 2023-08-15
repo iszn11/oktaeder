@@ -56,7 +56,7 @@ export type ColorTuple = readonly [r: number, g: number, b: number];
 
 export class Color {
 
-	readonly type!: "Color";
+	declare readonly type: "Color";
 
 	r: number;
 	g: number;
