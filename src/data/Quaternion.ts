@@ -41,6 +41,27 @@ export class Quaternion {
 		return new Quaternion(0, 0, 0, 1);
 	}
 
+	static fromRotationXY(angleRad: number): Quaternion {
+		const halfAngleRad = 0.5 * angleRad;
+		const c = Math.cos(halfAngleRad);
+		const s = Math.sin(halfAngleRad);
+		return new Quaternion(0, 0, s, c);
+	}
+
+	static fromRotationYZ(angleRad: number): Quaternion {
+		const halfAngleRad = 0.5 * angleRad;
+		const c = Math.cos(halfAngleRad);
+		const s = Math.sin(halfAngleRad);
+		return new Quaternion(s, 0, 0, c);
+	}
+
+	static fromRotationZX(angleRad: number): Quaternion {
+		const halfAngleRad = 0.5 * angleRad;
+		const c = Math.cos(halfAngleRad);
+		const s = Math.sin(halfAngleRad);
+		return new Quaternion(0, s, 0, c);
+	}
+
 	setObject(object: QuaternionObject): Quaternion {
 		this.x = object.x;
 		this.y = object.y;
@@ -62,6 +83,33 @@ export class Quaternion {
 		this.y = 0;
 		this.z = 0;
 		this.w = 1;
+		return this;
+	}
+
+	setRotationXY(angleRad: number): Quaternion {
+		const halfAngleRad = 0.5 * angleRad;
+		this.x = 0;
+		this.y = 0;
+		this.z = Math.sin(halfAngleRad);
+		this.w = Math.cos(halfAngleRad);
+		return this;
+	}
+
+	setRotationYZ(angleRad: number): Quaternion {
+		const halfAngleRad = 0.5 * angleRad;
+		this.x = Math.sin(halfAngleRad);
+		this.y = 0;
+		this.z = 0;
+		this.w = Math.cos(halfAngleRad);
+		return this;
+	}
+
+	setRotationZX(angleRad: number): Quaternion {
+		const halfAngleRad = 0.5 * angleRad;
+		this.x = 0;
+		this.y = Math.sin(halfAngleRad);
+		this.z = 0;
+		this.w = Math.cos(halfAngleRad);
 		return this;
 	}
 }

@@ -1,5 +1,5 @@
-import { Color, Material, Mesh, Node, PerspectiveCamera, PointLight, Quaternion, Scene, Submesh, Vector3 } from "../src/data/index";
-import { Renderer } from "../src/oktaeder";
+import { Color, DirectionalLight, Material, Mesh, Node, PerspectiveCamera, PointLight, Quaternion, Scene, Submesh, Vector3 } from "../src/data/index";
+import { Renderer, degToRad } from "../src/oktaeder";
 import "./style.css";
 
 new EventSource("/esbuild").addEventListener("change", () => location.reload());
@@ -11,7 +11,7 @@ onResize.call(window);
 const renderer = await Renderer.init(canvas);
 
 const camera = new PerspectiveCamera({
-	verticalFovRad: 50 * (Math.PI / 180),
+	verticalFovRad: degToRad(50),
 	nearPlane: 0.001,
 	farPlane: Infinity,
 });
@@ -47,12 +47,11 @@ const mesh = new Mesh({ vertexBuffer, indexBuffer, submeshes: [submesh] });
 const material = new Material({
 	baseColor: Color.white(),
 	roughness: 0.5,
-	metallic: 0,
+	metallic: 1,
 });
 
 const node = new Node({ mesh, materials: [material] });
 
-const cameraPitchRad = 15 * (Math.PI / 180);
 const scene = new Scene({
 	nodes: [
 		node,
@@ -73,8 +72,12 @@ const scene = new Scene({
 			light: new PointLight({ color: new Color(1, 1, 0) }),
 		}),
 		new Node({
+			rotation: Quaternion.fromRotationYZ(degToRad(-90)),
+			light: new DirectionalLight({ color: new Color(0.5, 0.5, 0.5) }),
+		}),
+		new Node({
 			translation: new Vector3(0, 0.8, -3),
-			rotation: new Quaternion(Math.sin(0.5 * cameraPitchRad), 0, 0, Math.cos(0.5 * cameraPitchRad)),
+			rotation: Quaternion.fromRotationYZ(degToRad(15)),
 			camera,
 		}),
 	],
@@ -86,12 +89,11 @@ function onResize(this: Window) {
 	canvas.height = this.innerHeight;
 }
 
-const rotation = Quaternion.identity();
+const _quaternion = Quaternion.identity();
 
-function draw(time: number) {
-	rotation.y = Math.cos(0.001 * time);
-	rotation.w = Math.sin(0.001 * time);
-	node.setRotation(rotation);
+function draw(timeMs: number) {
+	const time = 0.001 * timeMs;
+	node.setRotation(_quaternion.setRotationZX(-0.5 * time));
 
 	renderer.render(scene, camera);
 	requestAnimationFrame(draw);

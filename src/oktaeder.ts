@@ -5,6 +5,7 @@
  */
 
 export * from "./_BinaryWriter";
+export * from "./geometry";
 export * from "./shader";
 
 import { _BinaryWriter as BinaryWriter } from "./_BinaryWriter";
