@@ -11,7 +11,7 @@ export type Camera = OrthographicCamera | PerspectiveCamera;
 export interface OrthographicCameraProps {
 	readonly name?: string;
 
-	readonly verticalSize: number;
+	readonly halfVerticalSize: number;
 	readonly nearPlane: number;
 	readonly farPlane: number;
 }
@@ -39,13 +39,13 @@ export class OrthographicCamera {
 
 	constructor({
 		name = "",
-		verticalSize,
+		halfVerticalSize,
 		nearPlane,
 		farPlane,
 	}: OrthographicCameraProps) {
 		this._name = name;
 
-		this._halfVerticalSize = verticalSize;
+		this._halfVerticalSize = halfVerticalSize;
 		this._nearPlane = nearPlane;
 		this._farPlane = farPlane;
 
