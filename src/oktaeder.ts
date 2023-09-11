@@ -10,8 +10,8 @@ export * from "./shader";
 
 import { _BinaryWriter as BinaryWriter } from "./_BinaryWriter";
 import { _Mapping as Mapping } from "./_Mapping";
-import { Camera, Material, Matrix4x4, Node, Scene, Vector3, isDirectionalLight, isPointLight, preOrder } from "./data";
-import { IndexBuffer, IndexBufferProps, Texture2D, Texture2DProps, VertexBuffer, VertexBufferProps } from "./resources";
+import { Camera, DynamicMaterial, MaterialProps, Matrix4x4, Node, Scene, Vector3, isDirectionalLight, isDynamicMaterial, isPointLight, preOrder } from "./data";
+import { IndexBuffer, IndexBufferProps, Material, Texture2D, Texture2DProps, VertexBuffer, VertexBufferProps, isMaterial } from "./resources";
 import { GLOBAL_UNIFORMS_SIZE, MATERIAL_UNIFORMS_SIZE, OBJECT_UNIFORMS_SIZE, ShaderFlagKey, ShaderFlags, _createPipeline, _shaderFlagsKey } from "./shader";
 
 const _matrixOStoWSNormal = new Matrix4x4(
@@ -329,6 +329,10 @@ export class Renderer {
 		return new IndexBuffer(this, props);
 	}
 
+	createMaterial(props: MaterialProps): Material {
+		return new Material(this, props);
+	}
+
 	createTexture(props: Texture2DProps): Texture2D {
 		return new Texture2D(this, props);
 	}
@@ -382,16 +386,18 @@ export class Renderer {
 
 		this._uniformWriter.clear();
 
-		// gather materials
+		// gather dynamic materials
 
-		const materialMapping = new Mapping<Material>();
+		const dynamicMaterialMapping = new Mapping<DynamicMaterial>();
 		for (const node of preOrder(scene._nodes)) {
 			for (const material of node._materials) {
-				materialMapping.add(material);
+				if (isDynamicMaterial(material)) {
+					dynamicMaterialMapping.add(material);
+				}
 			}
 		}
 
-		const materialBindGroups = materialMapping.table.map((material) => {
+		const dynamicMaterialBindGroups = dynamicMaterialMapping.table.map((material) => {
 			const offset = this._uniformWriter._length;
 			this._uniformWriter.writeColorF32(material._baseColor);
 			this._uniformWriter.writeF32(material._partialCoverage);
@@ -541,9 +547,17 @@ export class Renderer {
 			for (let si = 0; si < mesh._submeshes.length; ++si) {
 				const submesh = mesh._submeshes[si]!;
 				const material = object._materials[si]!;
-				const { bindGroup: materialBindGroup, offset: materialOffset } = materialBindGroups[materialMapping.get(material)!]!;
 
-				pass.setBindGroup(1, materialBindGroup, [materialOffset]);
+				if (isMaterial(material)) {
+					pass.setBindGroup(1, material._bindGroup, [0]);
+				} else if (isDynamicMaterial(material)) {
+					const {
+						bindGroup: materialBindGroup,
+						offset: materialOffset
+					} = dynamicMaterialBindGroups[dynamicMaterialMapping.get(material)!]!;
+					pass.setBindGroup(1, materialBindGroup, [materialOffset]);
+				}
+
 				pass.drawIndexed(submesh.length, 1, submesh.start, 0, 0);
 			}
 		}

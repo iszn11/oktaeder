@@ -6,8 +6,9 @@
 
 export * from "./Camera";
 export * from "./Color";
+export * from "./DynamicMaterial";
 export * from "./Light";
-export * from "./Material";
+export * from "./MaterialProps";
 export * from "./Matrix4x4";
 export * from "./Mesh";
 export * from "./Node";

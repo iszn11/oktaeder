@@ -6,35 +6,11 @@
 
 import { Color, ColorObject } from ".";
 import { Texture2D } from "../resources";
+import { MaterialProps } from "./MaterialProps";
 
-export interface MaterialProps {
-	name?: string;
+export class DynamicMaterial {
 
-	baseColor?: ColorObject;
-	partialCoverage?: number;
-	transmission?: ColorObject;
-	collimation?: number;
-	occlusionTextureStrength?: number;
-	roughness?: number;
-	metallic?: number;
-	normalScale?: number;
-	emissive?: ColorObject;
-	ior?: number;
-
-	baseColorPartialCoverageTexture?: Texture2D | null;
-	occlusionTexture?: Texture2D | null;
-	roughnessMetallicTexture?: Texture2D | null;
-	normalTexture?: Texture2D | null;
-	emissiveTexture?: Texture2D | null;
-	transmissionCollimationTexture?: Texture2D | null;
-
-	transparent?: boolean;
-	doubleSided?: boolean;
-}
-
-export class Material {
-
-	declare readonly type: "Material";
+	declare readonly type: "DynamicMaterial";
 
 	_name: string;
 
@@ -107,7 +83,7 @@ export class Material {
 	set name(value: string) { this._name = value; }
 	get name(): string { return this._name; }
 
-	setBaseColor(value: ColorObject): Material {
+	setBaseColor(value: ColorObject): DynamicMaterial {
 		this._baseColor.setObject(value);
 		return this;
 	}
@@ -130,7 +106,7 @@ export class Material {
 	set normalScale(value: number) { this._normalScale = value; }
 	get normalScale(): number { return this._normalScale; }
 
-	setEmissive(value: ColorObject): Material {
+	setEmissive(value: ColorObject): DynamicMaterial {
 		this._emissive.setObject(value);
 		return this;
 	}
@@ -138,7 +114,7 @@ export class Material {
 		return res.setObject(this._emissive);
 	}
 
-	setTransmission(value: ColorObject): Material {
+	setTransmission(value: ColorObject): DynamicMaterial {
 		this._transmission.setObject(value);
 		return this;
 	}
@@ -152,22 +128,22 @@ export class Material {
 	set ior(value: number) { this._ior = value; }
 	get ior(): number { return this._ior; }
 
-	set baseColorPartialCoverageTexture(value: Texture2D | null) { this._baseColorPartialCoverageTexture = value;}
+	set baseColorPartialCoverageTexture(value: Texture2D | null) { this._baseColorPartialCoverageTexture = value; }
 	get baseColorPartialCoverageTexture(): Texture2D | null { return this._baseColorPartialCoverageTexture; }
 
-	set occlusionTexture(value: Texture2D | null) { this._occlusionTexture = value;}
+	set occlusionTexture(value: Texture2D | null) { this._occlusionTexture = value; }
 	get occlusionTexture(): Texture2D | null { return this._occlusionTexture; }
 
-	set roughnessMetallicTexture(value: Texture2D | null) { this._roughnessMetallicTexture = value;}
+	set roughnessMetallicTexture(value: Texture2D | null) { this._roughnessMetallicTexture = value; }
 	get roughnessMetallicTexture(): Texture2D | null { return this._roughnessMetallicTexture; }
 
-	set normalTexture(value: Texture2D | null) { this._normalTexture = value;}
+	set normalTexture(value: Texture2D | null) { this._normalTexture = value; }
 	get normalTexture(): Texture2D | null { return this._normalTexture; }
 
-	set emissiveTexture(value: Texture2D | null) { this._emissiveTexture = value;}
+	set emissiveTexture(value: Texture2D | null) { this._emissiveTexture = value; }
 	get emissiveTexture(): Texture2D | null { return this._emissiveTexture; }
 
-	set transmissionCollimationTexture(value: Texture2D | null) { this._transmissionCollimationTexture = value;}
+	set transmissionCollimationTexture(value: Texture2D | null) { this._transmissionCollimationTexture = value; }
 	get transmissionCollimationTexture(): Texture2D | null { return this._transmissionCollimationTexture; }
 
 	set transparent(value: boolean) { this._transparent = value; }
@@ -177,8 +153,8 @@ export class Material {
 	get doubleSided(): boolean { return this._doubleSided; }
 }
 
-Object.defineProperty(Material.prototype, "type", { value: "Material" });
+Object.defineProperty(DynamicMaterial.prototype, "type", { value: "DynamicMaterial" });
 
-export function isMaterial(value: unknown): value is Material {
-	return Boolean(value) && (value as Material).type === "Material";
+export function isDynamicMaterial(value: unknown): value is DynamicMaterial {
+	return Boolean(value) && (value as DynamicMaterial).type === "DynamicMaterial";
 }

@@ -4,7 +4,8 @@
  * obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Camera, Light, Material, Matrix4x4, Mesh, Quaternion, QuaternionObject, Vector3, Vector3Object } from ".";
+import { Camera, DynamicMaterial, Light, Matrix4x4, Mesh, Quaternion, QuaternionObject, Vector3, Vector3Object } from ".";
+import { Material } from "../resources";
 
 export interface NodeProps {
 	readonly name?: string;
@@ -16,7 +17,7 @@ export interface NodeProps {
 	readonly camera?: Camera | null;
 	readonly light?: Light | null;
 	readonly mesh?: Mesh | null;
-	readonly materials?: Material[];
+	readonly materials?: (Material | DynamicMaterial)[];
 
 	readonly children?: Node[];
 }
@@ -38,7 +39,7 @@ export class Node {
 	/** shared */
 	_mesh: Mesh | null;
 	/** shared */
-	_materials: Material[];
+	_materials: (Material | DynamicMaterial)[];
 
 	/** unique */
 	_children: Node[];
@@ -218,13 +219,13 @@ export class Node {
 	set mesh(value: Mesh | null) { this._mesh = value; }
 	get mesh(): Mesh | null { return this._mesh; }
 
-	setMaterials(value: readonly Material[]): Node {
+	setMaterials(value: readonly (Material | DynamicMaterial)[]): Node {
 		this._materials.length = 0;
 		this._materials.push(...value);
 		return this;
 	}
 
-	getMaterials(res: Material[]): Material[] {
+	getMaterials(res: (Material | DynamicMaterial)[]): (Material | DynamicMaterial)[] {
 		res.length = 0;
 		res.push(...this._materials);
 		return res;

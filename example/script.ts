@@ -1,4 +1,4 @@
-import { Color, DirectionalLight, Material, Mesh, Node, PerspectiveCamera, PointLight, Quaternion, Scene, Submesh, Vector3 } from "../src/data/index";
+import { Color, DirectionalLight, Mesh, Node, PerspectiveCamera, PointLight, Quaternion, Scene, Submesh, Vector3 } from "../src/data/index";
 import { Renderer, degToRad } from "../src/oktaeder";
 import "./style.css";
 
@@ -44,7 +44,7 @@ const submesh: Submesh = { start: 0, length: 24 };
 
 const mesh = new Mesh({ vertexBuffer, indexBuffer, submeshes: [submesh] });
 
-const material = new Material({
+const material = renderer.createMaterial({
 	baseColor: Color.white(),
 	roughness: 0.5,
 	metallic: 1,
