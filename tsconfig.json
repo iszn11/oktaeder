@@ -53,4 +53,5 @@
 
 		"skipLibCheck": false,
 	},
+	"include": ["./src/**/*"],
 }
